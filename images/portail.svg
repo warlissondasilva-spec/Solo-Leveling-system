@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <defs>
+    <radialGradient id="gate" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e0f7ff"/><stop offset=".25" stop-color="#00d2ff"/><stop offset=".6" stop-color="#3a1d7a"/><stop offset="1" stop-color="#05060a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070812"/><stop offset="1" stop-color="#151828"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="300" height="200" fill="url(#sky)"/>
+  <ellipse cx="150" cy="95" rx="70" ry="80" fill="url(#gate)"/>
+  <g fill="none" stroke="#00d2ff" stroke-width="1.5" opacity=".8" filter="url(#glow)">
+    <ellipse cx="150" cy="95" rx="48" ry="58"/><ellipse cx="150" cy="95" rx="32" ry="40" stroke="#9d4edd"/>
+  </g>
+  <path d="M0 200 L0 160 L20 150 L30 158 L45 140 L60 152 L70 130 L85 150 L100 145 L110 165 L190 165 L200 145 L215 150 L230 128 L240 152 L255 138 L270 156 L285 148 L300 160 L300 200 Z" fill="#05060a"/>
+  <path d="M146 200 L146 178 C146 170 154 170 154 178 L154 200 Z M144 182 L140 196 M156 182 L160 196" fill="#000" stroke="#000" stroke-width="3"/>
+  <circle cx="150" cy="168" r="5" fill="#000"/>
+  <text x="150" y="24" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" letter-spacing="4" fill="#00d2ff" filter="url(#glow)">PORTAIL DE RANG S</text>
+</svg>

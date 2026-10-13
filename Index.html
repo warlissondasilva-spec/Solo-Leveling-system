@@ -272,6 +272,52 @@
     .field input {
       width: 100%;
     }
+
+    /* Avatar & Galerie */
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      border: 1px solid var(--accent-purple);
+      box-shadow: 0 0 12px rgba(157, 78, 221, 0.5);
+      margin-right: 12px;
+      object-fit: cover;
+    }
+
+    .gallery {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding-bottom: 6px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .gallery figure {
+      flex: 0 0 75%;
+      max-width: 320px;
+      scroll-snap-align: start;
+      background: var(--panel-bg);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .gallery img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      object-fit: cover;
+    }
+
+    .gallery figcaption {
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -285,9 +331,12 @@
   <!-- Player Status Card -->
   <div class="status-card">
     <div class="status-header">
-      <div>
+      <div style="display: flex; align-items: center;">
+        <img class="avatar" src="images/monarque.svg" alt="Silhouette du Monarque des Ombres">
+        <div>
         <div class="title-tag">MONARQUE DES OMBRES</div>
         <h2>SUNG JIN-WOO</h2>
+        </div>
       </div>
       <div style="text-align: right;">
         <span style="font-size: 0.8rem; color: var(--text-dim);">NIVEAU</span>
@@ -305,6 +354,22 @@
         <div class="bar-fill" style="width: 45%;"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Galerie -->
+  <div class="gallery">
+    <figure>
+      <img src="images/portail.svg" alt="Un portail de rang S qui s'ouvre au-dessus de la ville">
+      <figcaption>Portail de rang S</figcaption>
+    </figure>
+    <figure>
+      <img src="images/armee.svg" alt="Le Monarque des Ombres devant son armée d'ombres">
+      <figcaption>L'armée des ombres</figcaption>
+    </figure>
+    <figure>
+      <img src="images/dague.svg" alt="Une dague lumineuse">
+      <figcaption>Croc du Roi Kasaka</figcaption>
+    </figure>
   </div>
 
   <!-- Console Agents -->
