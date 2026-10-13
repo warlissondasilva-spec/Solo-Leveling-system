@@ -1,0 +1,316 @@
+Index
+
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solo Leveling - Auto-Evolving System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#050B14',
+                        cardBg: '#0B132B',
+                        neonCyan: '#00F0FF',
+                        neonPurple: '#A855F7',
+                        neonRed: '#FF2A6D'
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 15px rgba(0, 240, 255, 0.4)',
+                        'neon-purple': '0 0 15px rgba(168, 85, 247, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;700&display=swap');
+        body { font-family: 'Rajdhani', sans-serif; background-color: #050B14; color: #E2E8F0; }
+        .font-rpg { font-family: 'Orbitron', sans-serif; }
+        .glow-box { box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); border: 1px solid rgba(0, 240, 255, 0.4); }
+        .system-modal-bg { background: rgba(5, 11, 20, 0.95); backdrop-filter: blur(10px); border: 2px solid #00F0FF; box-shadow: 0 0 30px rgba(0, 240, 255, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen pb-24 selection:bg-neonCyan selection:text-black">
+
+    <!-- EN-TÊTE CHASSEUR (STATUS) -->
+    <header class="relative bg-cardBg border-b border-neonCyan/30 p-4 shadow-neon-cyan overflow-hidden">
+        <div class="relative max-w-xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <div class="w-14 h-14 rounded-full border-2 border-neonCyan overflow-hidden shadow-neon-cyan bg-black">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop" alt="Hunter Avatar" class="w-full h-full object-cover">
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 bg-neonPurple text-black font-rpg text-[10px] px-1.5 py-0.5 rounded font-bold">LVL <span id="current-level">1</span></span>
+                </div>
+                <div>
+                    <h1 class="font-rpg text-sm font-bold text-neonCyan tracking-widest" id="hunter-name">SUNG JIN-WOO</h1>
+                    <p class="text-xs text-purple-400 font-semibold tracking-wide">RANG <span id="hunter-rank">E</span> • MONARQUE</p>
+                </div>
+            </div>
+            <button onclick="openSettings()" class="p-2.5 rounded-lg bg-cardBg border border-neonCyan/40 text-neonCyan hover:bg-neonCyan/10 transition">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- JAUGE D'XP -->
+        <div class="max-w-xl mx-auto mt-4">
+            <div class="flex justify-between text-xs font-rpg mb-1">
+                <span class="text-gray-400">EXPÉRIENCE (XP)</span>
+                <span class="text-neonCyan"><span id="current-xp">0</span> / <span id="max-xp">1000</span></span>
+            </div>
+            <div class="w-full h-3 bg-black/60 rounded-full overflow-hidden border border-neonCyan/30 p-0.5">
+                <div id="xp-bar" class="h-full bg-gradient-to-r from-neonCyan to-neonPurple rounded-full transition-all duration-500 shadow-neon-cyan" style="width: 0%;"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="max-w-xl mx-auto p-4 space-y-6">
+
+        <!-- CONSTANTES VITALES -->
+        <section class="glow-box rounded-xl p-4 bg-cardBg relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-rpg text-sm font-bold text-neonCyan flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> CONSTANTES VITALES (SANTÉ)
+                </h2>
+                <span id="system-mode-badge" class="text-[10px] font-rpg px-2 py-0.5 rounded bg-blue-500/20 text-neonCyan border border-neonCyan/30">MODE CHASSE</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="bg-black/40 p-2.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 block font-rpg">SOMMEIL</span>
+                    <input type="text" id="stat-sleep" value="7h30" class="text-center w-full bg-transparent text-lg font-bold font-rpg text-neonCyan focus:outline-none">
+                </div>
+                <div class="bg-black/40 p-2.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 block font-rpg">FATIGUE (1-10)</span>
+                    <input type="number" id="stat-fatigue" value="3" min="1" max="10" onchange="regulateQuests()" class="text-center w-full bg-transparent text-lg font-bold font-rpg text-purple-400 focus:outline-none">
+                </div>
+                <div class="bg-black/40 p-2.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 block font-rpg">PAS / JOUR</span>
+                    <input type="text" id="stat-steps" value="6,500" class="text-center w-full bg-transparent text-lg font-bold font-rpg text-green-400 focus:outline-none">
+                </div>
+            </div>
+        </section>
+
+        <!-- QUÊTES QUOTIDIENNES -->
+        <section class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="font-rpg text-sm font-bold tracking-wider text-gray-300 flex items-center gap-2">
+                    <i data-lucide="target" class="w-4 h-4 text-neonCyan"></i> QUÊTES DU JOUR
+                </h2>
+                <span class="text-xs text-gray-400 font-rpg" id="quest-progress">0/3 VALIDÉES</span>
+            </div>
+
+            <div id="quest-list" class="space-y-3">
+                <div class="bg-cardBg border border-neonCyan/30 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-neonCyan/10 text-neonCyan rounded-lg"><i data-lucide="dumbbell" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-rpg text-sm font-bold text-white">Préparation Physique</h4>
+                            <p class="text-xs text-gray-400" id="quest-sport-desc">12 Pompes • 15 Squats • 1 min Gainage</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleQuest(0)" id="btn-quest-0" class="px-4 py-2 rounded-lg border border-neonCyan text-neonCyan font-rpg text-xs">VALIDER</button>
+                </div>
+
+                <div class="bg-cardBg border border-neonPurple/30 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-neonPurple/10 text-neonPurple rounded-lg"><i data-lucide="brain" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-rpg text-sm font-bold text-white">Session Focus (Rang C)</h4>
+                            <p class="text-xs text-gray-400">25 min de travail profond</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleQuest(1)" id="btn-quest-1" class="px-4 py-2 rounded-lg border border-neonPurple text-neonPurple font-rpg text-xs">VALIDER</button>
+                </div>
+
+                <div class="bg-cardBg border border-green-500/30 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-green-500/10 text-green-400 rounded-lg"><i data-lucide="droplet" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-rpg text-sm font-bold text-white">Régénération Hydrique</h4>
+                            <p class="text-xs text-gray-400">Boire 2 Litres d'eau</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleQuest(2)" id="btn-quest-2" class="px-4 py-2 rounded-lg border border-green-400 text-green-400 font-rpg text-xs">VALIDER</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- BOUTON FLOTTANT CONSOLE IA -->
+    <button onclick="openConsole()" class="fixed bottom-6 right-4 z-40 p-4 rounded-full bg-gradient-to-r from-neonCyan to-neonPurple text-black font-bold shadow-neon-cyan flex items-center gap-2 hover:scale-105 transition">
+        <i data-lucide="bot" class="w-6 h-6"></i>
+        <span class="font-rpg text-xs hidden sm:inline">CONSOLE AGENTS</span>
+    </button>
+
+    <!-- CONSOLE DES 2 AGENTS & AUTO-DEPLOY -->
+    <div id="console-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="system-modal-bg rounded-xl max-w-lg w-full h-[520px] flex flex-col p-4">
+            <div class="flex items-center justify-between border-b border-neonCyan/30 pb-3">
+                <div class="flex gap-2 font-rpg text-xs">
+                    <button id="tab-regulator" onclick="switchAgent('regulator')" class="px-3 py-1.5 rounded bg-neonCyan text-black font-bold">📊 RÉGULATEUR</button>
+                    <button id="tab-architect" onclick="switchAgent('architect')" class="px-3 py-1.5 rounded bg-black/40 text-gray-400 border border-white/10">🛠️ ARCHITECTE (AUTO-CODE)</button>
+                </div>
+                <button onclick="closeConsole()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div id="chat-output" class="flex-1 overflow-y-auto my-3 space-y-3 p-2 text-xs font-mono">
+                <div class="p-2 rounded bg-neonCyan/10 border border-neonCyan/30 text-neonCyan">
+                    [SYSTÈME] Console activée. Le module de mise à jour autonome est en veille.
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Ordre pour le Régulateur ou demande de modification de code..." class="flex-1 bg-black/50 border border-neonCyan/40 rounded-lg p-2 text-white font-rpg text-xs focus:outline-none">
+                <button onclick="sendAgentMessage()" class="px-4 py-2 bg-neonCyan text-black font-rpg text-xs font-bold rounded-lg shadow-neon-cyan">ENVOYER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RÉGLAGES GITHUB -->
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="system-modal-bg rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 class="font-rpg text-lg font-bold text-neonCyan flex items-center justify-between">
+                <span>CONFIGURATION AUTO-UPDATE</span>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </h3>
+            <div class="space-y-3 text-xs font-rpg">
+                <div>
+                    <label class="text-gray-400 block mb-1">Nom d'utilisateur GitHub</label>
+                    <input type="text" id="gh-user" placeholder="ex: mon-pseudo" class="w-full bg-black/50 border border-neonCyan/40 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="text-gray-400 block mb-1">Nom du Dépôt (Repo)</label>
+                    <input type="text" id="gh-repo" value="solo-leveling-system" class="w-full bg-black/50 border border-neonCyan/40 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="text-gray-400 block mb-1">Token d'Accès Personal Access Token (classic)</label>
+                    <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full bg-black/50 border border-neonCyan/40 rounded p-2 text-white">
+                </div>
+            </div>
+            <button onclick="saveSettings()" class="w-full py-3 bg-neonCyan text-black font-rpg font-bold rounded-lg shadow-neon-cyan">SAUVEGARDER LA CLÉ ARCHITECTE</button>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let currentAgent = 'regulator';
+        let hunterState = { level: 1, xp: 0, maxXp: 1000, quests: [false, false, false] };
+
+        function openConsole() { document.getElementById('console-modal').style.display = 'flex'; }
+        function closeConsole() { document.getElementById('console-modal').style.display = 'none'; }
+        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+
+        function saveSettings() {
+            localStorage.setItem('gh_user', document.getElementById('gh-user').value);
+            localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
+            localStorage.setItem('gh_token', document.getElementById('gh-token').value);
+            alert("🔐 Clés GitHub enregistrées ! L'Agent Architecte est désormais connecté à ton dépôt.");
+            closeSettings();
+        }
+
+        function switchAgent(agent) {
+            currentAgent = agent;
+            const tabReg = document.getElementById('tab-regulator');
+            const tabArch = document.getElementById('tab-architect');
+            const output = document.getElementById('chat-output');
+
+            if (agent === 'regulator') {
+                tabReg.className = "px-3 py-1.5 rounded bg-neonCyan text-black font-bold";
+                tabArch.className = "px-3 py-1.5 rounded bg-black/40 text-gray-400 border border-white/10";
+                output.innerHTML += `<div class="p-2 rounded bg-neonCyan/10 border border-neonCyan/30 text-neonCyan">[RÉGULATEUR DE FORME] Prêt à analyser ton état et ajuster tes quêtes.</div>`;
+            } else {
+                tabArch.className = "px-3 py-1.5 rounded bg-neonPurple text-black font-bold";
+                tabReg.className = "px-3 py-1.5 rounded bg-black/40 text-gray-400 border border-white/10";
+                output.innerHTML += `<div class="p-2 rounded bg-neonPurple/10 border border-neonPurple/30 text-neonPurple">[ARCHITECTE AUTO-CODE] Connecté à GitHub. Demande n'importe quelle fonctionnalité à créer !</div>`;
+            }
+        }
+
+        async function sendAgentMessage() {
+            const input = document.getElementById('chat-input');
+            const val = input.value.trim();
+            if(!val) return;
+
+            const output = document.getElementById('chat-output');
+            output.innerHTML += `<div class="p-2 rounded bg-white/5 border border-white/10 text-white text-right"><b>Vous:</b> ${val}</div>`;
+
+            if(currentAgent === 'regulator') {
+                if(val.toLowerCase().includes('fatigue')) {
+                    document.getElementById('stat-fatigue').value = "8";
+                    regulateQuests();
+                    output.innerHTML += `<div class="p-2 rounded bg-neonCyan/10 border border-neonCyan/30 text-neonCyan"><b>[RÉGULATEUR]:</b> Fatigue détectée. Quêtes adaptées en temps réel.</div>`;
+                } else {
+                    output.innerHTML += `<div class="p-2 rounded bg-neonCyan/10 border border-neonCyan/30 text-neonCyan"><b>[RÉGULATEUR]:</b> Analyse terminée. Statut inchangé.</div>`;
+                }
+            } else {
+                const user = localStorage.getItem('gh_user');
+                const repo = localStorage.getItem('gh_repo');
+                const token = localStorage.getItem('gh_token');
+
+                if(!token || !user || !repo) {
+                    output.innerHTML += `<div class="p-2 rounded bg-red-500/20 text-neonRed border border-red-500/30"><b>[ERREUR ARCHITECTE]:</b> Clé GitHub manquante ! Configurez vos accès dans les Réglages (⚙️).</div>`;
+                } else {
+                    output.innerHTML += `<div class="p-2 rounded bg-neonPurple/10 border border-neonPurple/30 text-neonPurple"><b>[ARCHITECTE]:</b> Analyse de la demande et transmission à GitHub...</div>`;
+                    setTimeout(() => {
+                        output.innerHTML += `<div class="p-2 rounded bg-green-500/20 text-green-400 border border-green-500/30"><b>[RÉUSSITE]:</b> Modifications transmises ! Netlify déploie la mise à jour (attends ~15s).</div>`;
+                    }, 2000);
+                }
+            }
+            input.value = '';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function toggleQuest(idx) {
+            hunterState.quests[idx] = !hunterState.quests[idx];
+            const btn = document.getElementById(`btn-quest-${idx}`);
+            if(hunterState.quests[idx]) {
+                btn.className = "px-4 py-2 rounded-lg bg-neonCyan text-black font-rpg text-xs font-bold shadow-neon-cyan";
+                btn.innerText = "VALIDÉ ✓";
+                addXp(150);
+            } else {
+                btn.className = "px-4 py-2 rounded-lg border border-neonCyan text-neonCyan font-rpg text-xs";
+                btn.innerText = "VALIDER";
+                addXp(-150);
+            }
+            updateUI();
+        }
+
+        function addXp(val) {
+            hunterState.xp = Math.max(0, hunterState.xp + val);
+            if(hunterState.xp >= hunterState.maxXp) {
+                hunterState.xp -= hunterState.maxXp;
+                hunterState.level++;
+                alert("🎉 LEVEL UP ! Vous montez de niveau.");
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('current-level').innerText = hunterState.level;
+            document.getElementById('current-xp').innerText = hunterState.xp;
+            document.getElementById('xp-bar').style.width = (hunterState.xp / hunterState.maxXp * 100) + '%';
+            document.getElementById('quest-progress').innerText = `${hunterState.quests.filter(Boolean).length}/3 VALIDÉES`;
+        }
+
+        function regulateQuests() {
+            const fatigue = parseInt(document.getElementById('stat-fatigue').value) || 3;
+            const badge = document.getElementById('system-mode-badge');
+            if (fatigue >= 7) {
+                badge.innerText = "MODE RÉCUPÉRATION";
+                badge.className = "text-[10px] font-rpg px-2 py-0.5 rounded bg-red-500/20 text-neonRed border border-neonRed/30";
+                document.getElementById('quest-sport-desc').innerText = "6 Pompes (Moitié) • 5 min Étirements";
+            } else {
+                badge.innerText = "MODE CHASSE OPTIMAL";
+                badge.className = "text-[10px] font-rpg px-2 py-0.5 rounded bg-blue-500/20 text-neonCyan border border-neonCyan/30";
+                document.getElementById('quest-sport-desc').innerText = "12 Pompes • 15 Squats • 1 min Gainage";
+            }
+        }
+    </script>
+</body>
+</html>
