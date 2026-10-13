@@ -349,16 +349,11 @@
     </div>
   </div>
 
-  <script>
-    // LocalStorage Configuration Auto-load
-    // REMPLACE CES VALEURS PAR TES VRAIS IDENTIFIANTS SI TU VEUX TOUT PRÉ-REMPLIR
+ <script>
+    // Configuration
     const DEFAULT_USER = "warlissondasilva-spec";
     const DEFAULT_REPO = "solo-leveling-system";
     const DEFAULT_TOKEN = "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";
-
-    if (!localStorage.getItem('gh_user')) localStorage.setItem('gh_user', DEFAULT_USER);
-    if (!localStorage.getItem('gh_repo')) localStorage.setItem('gh_repo', DEFAULT_REPO);
-    if (!localStorage.getItem('gh_token')) localStorage.setItem('gh_token', DEFAULT_TOKEN);
 
     // Dynamic Variables
     let activeAgent = 'architecte';
@@ -373,9 +368,9 @@
 
     // Modal Control
     function openSettings() {
-      document.getElementById('ghUser').value = localStorage.getItem('gh_user') || '';
-      document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
-      document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+      document.getElementById('ghUser').value = localStorage.getItem('gh_user') || DEFAULT_USER;
+      document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || DEFAULT_REPO;
+      document.getElementById('ghToken').value = localStorage.getItem('gh_token') || DEFAULT_TOKEN;
       document.getElementById('settingsModal').style.display = 'flex';
     }
 
@@ -414,63 +409,82 @@
       input.value = '';
 
       if (activeAgent === 'architecte') {
-        appendMessage('system', '⚡ [ARCHITECTE]: Traitement de la demande et préparation du commit GitHub...');
+        appendMessage('system', '⚡ [ARCHITECTE]: Connexion à l\'API GitHub en cours...');
         
-        // Simuler ou appeler la mise à jour GitHub réelle
-        const success = await commitCodeToGitHub(`<!-- Updated Request: ${text} -->\n` + document.documentElement.outerHTML, `Architect Update: ${text}`);
+        const success = await commitCodeToGitHub(text);
         if (success) {
-          appendMessage('system', '✅ [ARCHITECTE]: Code mis à jour avec succès sur GitHub ! Déploiement Netlify initié.');
+          appendMessage('system', '✅ [ARCHITECTE]: Commit réussi ! Netlify déploie la mise à jour...');
         } else {
-          appendMessage('system', '❌ [ARCHITECTE]: Échec lors de la transmission du code. Vérifiez votre Token/Permissions.');
+          appendMessage('system', '❌ [ARCHITECTE]: Échec du commit. Ouvrez la console (F12) pour voir l\'erreur.');
         }
       } else {
-        appendMessage('system', `[RÉGULATEUR]: Demande analysée : "${text}". Constantes vitales optimales.`);
+        appendMessage('system', `[RÉGULATEUR]: Analyse de votre message : "${text}". Niveau de fatigue calculé. Quête mise à jour.`);
       }
     }
 
-    // GitHub API Commit Handler
-    async function commitCodeToGitHub(newContent, commitMessage = "Auto-update by Architect Agent") {
-      const ghUser = localStorage.getItem('gh_user');
-      const ghRepo = localStorage.getItem('gh_repo');
-      const ghToken = localStorage.getItem('gh_token');
+    // GitHub API Commit Handler Corrected
+    async function commitCodeToGitHub(userInstruction) {
+      const ghUser = localStorage.getItem('gh_user') || DEFAULT_USER;
+      const ghRepo = localStorage.getItem('gh_repo') || DEFAULT_REPO;
+      const ghToken = localStorage.getItem('gh_token') || DEFAULT_TOKEN;
 
-      if (!ghUser || !ghRepo || !ghToken || ghToken.includes('TON_TOKEN')) {
-        alert("⚠️ Erreur : Veuillez renseigner votre Pseudo et Token GitHub dans les Réglages ⚙️ !");
+      if (!ghUser || !ghRepo || !ghToken) {
+        alert("⚠️ Identifiants manquants dans les Réglages !");
         return false;
       }
 
       try {
         const url = `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/index.html`;
         
-        // 1. Récupérer le SHA du fichier existant
+        // 1. Récupérer le fichier et son SHA
         const getRes = await fetch(url, {
-          headers: { 'Authorization': `token ${ghToken}` }
+          headers: { 
+            'Authorization': `token ${ghToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
         });
 
-        if (!getRes.ok) throw new Error("Fichier introuvable sur le dépôt GitHub.");
+        if (!getRes.ok) {
+          console.error("Erreur Fetch GitHub:", await getRes.text());
+          return false;
+        }
+
         const fileData = await getRes.json();
         const currentSha = fileData.sha;
+        
+        // Décoder le contenu HTML actuel
+        let currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
 
-        // 2. Encoder le nouveau contenu en Base64 UTF-8
-        const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+        // Exemple de modification de code par l'Architecte (ajoute un commentaire de version)
+        const updatedContent = currentContent + `\n<!-- Architect Auto-Update: ${userInstruction} -->`;
 
-        // 3. Envoyer la mise à jour PUT
+        // 2. Encoder en Base64 UTF-8 propre
+        const encodedContent = btoa(unescape(encodeURIComponent(updatedContent)));
+
+        // 3. Envoyer la mise à jour
         const putRes = await fetch(url, {
           method: 'PUT',
           headers: {
             'Authorization': `token ${ghToken}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
           },
           body: JSON.stringify({
-            message: commitMessage,
+            message: `Architect: ${userInstruction}`,
             content: encodedContent,
             sha: currentSha
           })
         });
 
-        return putRes.ok;
+        if (!putRes.ok) {
+          const errData = await putRes.json();
+          console.error("Erreur Commit API:", errData);
+          return false;
+        }
+
+        return true;
       } catch (err) {
-        console.error("GitHub API Error:", err);
+        console.error("Erreur secours:", err);
         return false;
       }
     }
