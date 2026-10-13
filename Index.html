@@ -250,9 +250,10 @@ Index
                     output.innerHTML += `<div class="p-2 rounded bg-neonCyan/10 border border-neonCyan/30 text-neonCyan"><b>[RÉGULATEUR]:</b> Analyse terminée. Statut inchangé.</div>`;
                 }
             } else {
-                const user = localStorage.getItem('gh_user');
-                const repo = localStorage.getItem('gh_repo');
-                const token = localStorage.getItem('gh_token');
+                // REMPLACE CES 3 LIGNES DANS TON INDEX.HTML :
+localStorage.setItem('gh_user', 'warlissondasilva-spec');
+localStorage.setItem('gh_repo', 'solo-leveling-system');
+localStorage.setItem('gh_token', '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');
 
                 if(!token || !user || !repo) {
                     output.innerHTML += `<div class="p-2 rounded bg-red-500/20 text-neonRed border border-red-500/30"><b>[ERREUR ARCHITECTE]:</b> Clé GitHub manquante ! Configurez vos accès dans les Réglages (⚙️).</div>`;
