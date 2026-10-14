@@ -191,6 +191,7 @@
       max-width: 85%;
       line-height: 1.4;
       word-wrap: break-word;
+      white-space: pre-wrap;
     }
 
     .msg-system {
@@ -266,6 +267,8 @@
       border: 1px solid var(--accent-blue);
       width: 100%;
       max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
@@ -341,7 +344,7 @@
 
   <!-- Header -->
   <header>
-    <h1>SYSTEM // SOLO LEVELING</h1>
+    <h1 id="appTitle">SYSTEM // SOLO LEVELING</h1>
     <button class="btn-icon" onclick="openSettings()">⚙️ RÉGLAGES</button>
   </header>
 
@@ -351,13 +354,13 @@
       <div style="display: flex; align-items: center;">
         <img class="avatar" src="images/monarque.svg" alt="Silhouette du Monarque des Ombres">
         <div>
-          <div class="title-tag">MONARQUE DES OMBRES</div>
-          <h2>SUNG JIN-WOO</h2>
+          <div class="title-tag" id="tagValue">MONARQUE DES OMBRES</div>
+          <h2 id="nameValue">SUNG JIN-WOO</h2>
         </div>
       </div>
       <div style="text-align: right;">
         <span style="font-size: 0.8rem; color: var(--text-dim);">NIVEAU</span>
-        <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-blue);">18</div>
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-blue);" id="levelValue">18</div>
       </div>
     </div>
 
@@ -365,10 +368,10 @@
     <div class="stat-bar-container">
       <div class="stat-label">
         <span>EXPÉRIENCE</span>
-        <span>450 / 1000</span>
+        <span id="xpText">450 / 1000</span>
       </div>
       <div class="bar">
-        <div class="bar-fill" style="width: 45%;"></div>
+        <div class="bar-fill" id="xpFill" style="width: 45%;"></div>
       </div>
     </div>
   </div>
@@ -398,12 +401,12 @@
 
     <div class="chat-box" id="chatBox">
       <div class="message msg-system">
-        [SYSTÈME]: Agent Architecte connecté avec accès GitHub &amp; CI/CD. Prêt pour l'auto-codage.
+        [SYSTÈME]: Agent Architecte connecté avec accès GitHub &amp; CI/CD. Prêt pour l'auto-codage. Tapez « aide » pour voir les ordres disponibles.
       </div>
     </div>
 
     <div class="input-area">
-      <input type="text" id="userInput" placeholder="Donnez un ordre de modification au Système..." autocomplete="off">
+      <input type="text" id="userInput" placeholder="Ordre ou demande (ex : ajoute un onglet Quêtes)" autocomplete="off">
       <button class="btn-send" id="sendBtn">ENVOYER</button>
     </div>
   </div>
@@ -423,6 +426,14 @@
       <div class="field">
         <label for="ghToken">Token GitHub (PAT)</label>
         <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" autocapitalize="off">
+      </div>
+      <div class="field">
+        <label for="aiKey">Clé API Anthropic (Architecte IA)</label>
+        <input type="password" id="aiKey" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off">
+      </div>
+      <div class="field">
+        <label for="aiModel">Modèle IA</label>
+        <input type="text" id="aiModel" placeholder="claude-sonnet-5-5" autocomplete="off" autocapitalize="off">
       </div>
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button class="btn-send" style="flex: 1; padding: 12px;" onclick="saveSettings()">SAUVEGARDER</button>
@@ -465,6 +476,8 @@
       document.getElementById('ghUser').value = lsGet('gh_user') || DEFAULT_USER;
       document.getElementById('ghRepo').value = lsGet('gh_repo') || DEFAULT_REPO;
       document.getElementById('ghToken').value = lsGet('gh_token') || '';
+      document.getElementById('aiKey').value = lsGet('ai_key') || '';
+      document.getElementById('aiModel').value = lsGet('ai_model') || '';
       document.getElementById('settingsModal').style.display = 'flex';
     }
 
@@ -476,6 +489,8 @@
       lsSet('gh_user', document.getElementById('ghUser').value.trim());
       lsSet('gh_repo', document.getElementById('ghRepo').value.trim());
       lsSet('gh_token', document.getElementById('ghToken').value.trim());
+      lsSet('ai_key', document.getElementById('aiKey').value.trim());
+      lsSet('ai_model', document.getElementById('aiModel').value.trim());
       closeSettings();
       appendMessage('system', '[SYSTÈME]: Paramètres GitHub sauvegardés avec succès !');
     }
@@ -515,13 +530,26 @@
 
       if (activeAgent === 'architecte') {
         setBusy(true);
-        appendMessage('system', "⚡ [ARCHITECTE]: Connexion à l'API GitHub en cours...");
-
-        const result = await commitCodeToGitHub(text);
-        if (result.ok) {
-          appendMessage('system', '✅ [ARCHITECTE]: Commit réussi ! Netlify déploie la mise à jour...');
-        } else {
-          appendMessage('system', `❌ [ARCHITECTE]: Échec du commit — ${result.error}`);
+        try {
+          const res = applyDirective(text); // ordres simples : instantanés et gratuits
+          if (res.ok) {
+            appendMessage('system', '✅ [ARCHITECTE]: ' + res.msg);
+            if (res.sync) {
+              if (!lsGet('gh_token')) {
+                appendMessage('system', '[ARCHITECTE]: Appliqué sur cet appareil uniquement (aucun token GitHub dans les Réglages).');
+              } else {
+                const r = await syncConfigToGitHub(text);
+                appendMessage('system', r.ok
+                  ? '☁️ [ARCHITECTE]: Sauvegardé sur GitHub.'
+                  : `⚠️ [ARCHITECTE]: Appliqué ici, mais synchronisation GitHub échouée — ${r.error}`);
+              }
+            }
+          } else {
+            await runArchitectAI(text); // ordre libre : l'IA modifie le code
+          }
+        } catch (err) {
+          console.error(err);
+          appendMessage('system', `❌ [ARCHITECTE]: Échec — ${err.message}`);
         }
         setBusy(false);
       } else {
@@ -546,65 +574,422 @@
       return btoa(binary);
     }
 
-    // ---------- Commit GitHub ----------
-    async function commitCodeToGitHub(userInstruction) {
+    // ---------- État de l'interface (modifié par les ordres de l'Architecte) ----------
+    const DEFAULT_STATE = {
+      accent: '#00d2ff', accent2: '#9d4edd', bg: '#0d0e15',
+      appTitle: 'SYSTEM // SOLO LEVELING', tag: 'MONARQUE DES OMBRES', name: 'SUNG JIN-WOO',
+      level: 18, xp: 450, xpMax: 1000
+    };
+    let state = { ...DEFAULT_STATE };
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(lsGet('sl_state') || 'null');
+        if (saved) state = { ...DEFAULT_STATE, ...saved };
+      } catch (e) { /* ignoré */ }
+    }
+
+    function saveState() { lsSet('sl_state', JSON.stringify(state)); }
+
+    function applyState() {
+      const root = document.documentElement.style;
+      root.setProperty('--accent-blue', state.accent);
+      root.setProperty('--accent-purple', state.accent2);
+      root.setProperty('--bg-color', state.bg);
+      const theme = document.querySelector('meta[name="theme-color"]');
+      if (theme) theme.setAttribute('content', state.bg);
+
+      document.getElementById('appTitle').textContent = state.appTitle;
+      document.getElementById('tagValue').textContent = state.tag;
+      document.getElementById('nameValue').textContent = state.name;
+      document.getElementById('levelValue').textContent = state.level;
+      document.getElementById('xpText').textContent = `${state.xp} / ${state.xpMax}`;
+      const pct = Math.max(0, Math.min(100, (state.xp / state.xpMax) * 100));
+      document.getElementById('xpFill').style.width = pct + '%';
+    }
+
+    async function loadRemoteConfig() {
+      try {
+        const res = await fetch('config.json', { cache: 'no-store' });
+        if (res.ok) {
+          state = { ...DEFAULT_STATE, ...(await res.json()) };
+          applyState();
+        }
+      } catch (e) { /* pas de config.json : on garde les valeurs par défaut */ }
+    }
+
+    // ---------- Moteur d'ordres ----------
+    const COLORS = {
+      bleu: '#00d2ff', rouge: '#ff0055', violet: '#9d4edd', vert: '#00ff88', or: '#ffd700',
+      dore: '#ffd700', rose: '#ff4fd8', orange: '#ff8a00', blanc: '#ffffff', noir: '#000000',
+      cyan: '#00e5ff', gris: '#7a889b', jaune: '#ffe600'
+    };
+
+    const HELP = [
+      'Ordres disponibles (séparez-en plusieurs avec « ; ») :',
+      '• couleur rouge  /  couleur #ff8800',
+      '• couleur secondaire vert',
+      '• fond noir  /  fond #101020',
+      '• niveau 25',
+      '• xp 700  /  xp +100  /  xp 300/2000',
+      '• titre: OMBRE SUPRÊME',
+      '• nom: Sung Jin-Woo',
+      '• app: MON SYSTÈME',
+      '• reset (tout remettre par défaut)',
+      '',
+      'Tout autre ordre est envoyé à l\'IA, qui modifie le code et le visuel (ex : « ajoute un onglet Quêtes », « rends les cartes plus arrondies »).'
+    ].join('\n');
+
+    function norm(s) {
+      return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    function findColor(s) {
+      const hex = s.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/i);
+      if (hex) return hex[0];
+      for (const w of norm(s).split(/[^a-z]+/)) {
+        if (COLORS[w]) return COLORS[w];
+      }
+      return null;
+    }
+
+    function runDirective(raw) {
+      const t = raw.trim();
+      const n = norm(t);
+      let m;
+
+      if (/^(aide|help|\?)$/.test(n)) return { ok: true, msg: HELP, sync: false };
+
+      if (/(reinitialis|^reset|par defaut)/.test(n)) {
+        state = { ...DEFAULT_STATE };
+        return { ok: true, msg: 'Interface réinitialisée.', sync: true };
+      }
+
+      if ((m = t.match(/^(?:nom de l['’]app(?:lication)?|app(?:lication)?)\s*:\s*(.+)$/i))) {
+        state.appTitle = m[1].trim().toUpperCase();
+        return { ok: true, msg: `Titre de l'application : ${state.appTitle}`, sync: true };
+      }
+
+      if ((m = t.match(/^titre\s*:\s*(.+)$/i))) {
+        state.tag = m[1].trim().toUpperCase();
+        return { ok: true, msg: `Titre du joueur : ${state.tag}`, sync: true };
+      }
+
+      if ((m = t.match(/^nom\s*:\s*(.+)$/i))) {
+        state.name = m[1].trim().toUpperCase();
+        return { ok: true, msg: `Nom du joueur : ${state.name}`, sync: true };
+      }
+
+      if ((m = t.match(/^niveau\s*(?::|\ben\b)?\s*(\d+)$/i))) {
+        state.level = Math.max(1, Math.min(999, parseInt(m[1], 10)));
+        return { ok: true, msg: `Niveau ${state.level}.`, sync: true };
+      }
+
+      if ((m = t.match(/^(?:xp|exp[ée]rience)\s*(?::|\ben\b)?\s*(\+)?\s*(\d+)(?:\s*\/\s*(\d+))?$/i))) {
+        const value = parseInt(m[2], 10);
+        if (m[3]) state.xpMax = Math.max(1, parseInt(m[3], 10));
+        if (m[1]) {
+          state.xp += value;
+          let ups = 0;
+          while (state.xp >= state.xpMax) { state.xp -= state.xpMax; state.level++; ups++; }
+          return { ok: true, msg: ups ? `+${value} XP — NIVEAU SUPÉRIEUR ! Niveau ${state.level}.` : `+${value} XP.`, sync: true };
+        }
+        state.xp = Math.min(value, state.xpMax);
+        return { ok: true, msg: `Expérience : ${state.xp} / ${state.xpMax}.`, sync: true };
+      }
+
+      if (t.split(/\s+/).length <= 4 && /\b(fond|couleur|accent|theme|secondaire)\b/.test(n)) {
+        const color = findColor(t);
+        if (!color) return { ok: false, msg: 'Couleur non reconnue. Essayez : bleu, rouge, violet, vert, or, rose, orange, blanc, noir ou un code #rrggbb.' };
+        if (/\bfond\b/.test(n)) { state.bg = color; return { ok: true, msg: `Fond : ${color}`, sync: true }; }
+        if (/secondaire/.test(n)) { state.accent2 = color; return { ok: true, msg: `Couleur secondaire : ${color}`, sync: true }; }
+        state.accent = color;
+        return { ok: true, msg: `Couleur principale : ${color}`, sync: true };
+      }
+
+      return { ok: false, msg: `Ordre non compris : « ${t} ». Tapez « aide » pour voir la liste.` };
+    }
+
+    function applyDirective(text) {
+      const parts = text.split(';').map(p => p.trim()).filter(Boolean);
+      const msgs = [];
+      let anyOk = false, sync = false;
+      for (const part of parts) {
+        const r = runDirective(part);
+        msgs.push(r.msg);
+        if (r.ok) { anyOk = true; if (r.sync) sync = true; }
+      }
+      if (sync) { applyState(); saveState(); }
+      return { ok: anyOk, msg: msgs.join('\n'), sync };
+    }
+
+    // ---------- Synchronisation GitHub : écrit config.json dans le dépôt ----------
+    async function syncConfigToGitHub(instruction) {
       const ghUser = lsGet('gh_user') || DEFAULT_USER;
       const ghRepo = lsGet('gh_repo') || DEFAULT_REPO;
       const ghToken = lsGet('gh_token');
-
-      if (!ghUser || !ghRepo || !ghToken) {
-        openSettings();
-        return { ok: false, error: 'identifiants manquants, renseignez-les dans les Réglages.' };
-      }
-
-      const url = `https://api.github.com/repos/${encodeURIComponent(ghUser)}/${encodeURIComponent(ghRepo)}/contents/index.html`;
+      const url = `https://api.github.com/repos/${encodeURIComponent(ghUser)}/${encodeURIComponent(ghRepo)}/contents/config.json`;
       const headers = {
         'Authorization': `Bearer ${ghToken}`,
         'Accept': 'application/vnd.github+json'
       };
 
       try {
-        // 1. Récupérer le fichier et son SHA
+        let sha;
         const getRes = await fetch(url, { headers, cache: 'no-store' });
-        if (!getRes.ok) {
+        if (getRes.ok) {
+          sha = (await getRes.json()).sha;
+        } else if (getRes.status !== 404) {
           const err = await getRes.json().catch(() => ({}));
-          console.error('Erreur Fetch GitHub:', getRes.status, err);
-          return { ok: false, error: `lecture impossible (${getRes.status}) ${err.message || ''}`.trim() };
+          return { ok: false, error: `lecture (${getRes.status}) ${err.message || ''}`.trim() };
         }
 
-        const fileData = await getRes.json();
-        const currentContent = base64ToUtf8(fileData.content);
-
-        // 2. Modification : note de mise à jour insérée avant </body> (et non après </html>)
-        const safeInstruction = userInstruction.replace(/--/g, '- -');
-        const note = `  <!-- Architect Auto-Update: ${safeInstruction} -->\n`;
-        const updatedContent = currentContent.includes('</body>')
-          ? currentContent.replace('</body>', note + '</body>')
-          : currentContent + '\n' + note;
-
-        // 3. Envoyer la mise à jour
         const putRes = await fetch(url, {
           method: 'PUT',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: `Architect: ${userInstruction}`,
-            content: utf8ToBase64(updatedContent),
-            sha: fileData.sha
+            message: `Architect: ${instruction}`,
+            content: utf8ToBase64(JSON.stringify(state, null, 2) + '\n'),
+            sha
           })
         });
 
         if (!putRes.ok) {
-          const errData = await putRes.json().catch(() => ({}));
-          console.error('Erreur Commit API:', putRes.status, errData);
-          return { ok: false, error: `écriture refusée (${putRes.status}) ${errData.message || ''}`.trim() };
+          const err = await putRes.json().catch(() => ({}));
+          return { ok: false, error: `écriture (${putRes.status}) ${err.message || ''}`.trim() };
         }
-
         return { ok: true };
       } catch (err) {
         console.error('Erreur réseau:', err);
         return { ok: false, error: 'erreur réseau ou CORS, voir la console.' };
       }
     }
+
+    // ---------- Architecte IA : modifie le code d'index.html via Claude + GitHub ----------
+    const MARK_SEARCH = '<'.repeat(7) + ' SEARCH';
+    const MARK_DIVIDER = '='.repeat(7);
+    const MARK_REPLACE = '>'.repeat(7) + ' REPLACE';
+
+    function systemPrompt() {
+      return `Tu es l'Architecte, un développeur front-end expert qui modifie le fichier index.html d'une PWA mobile (« Solo Leveling System »). Le fichier est autonome : HTML, CSS et JavaScript dans un seul fichier, sans dépendance externe.
+
+Tu reçois le fichier complet et un ordre de l'utilisateur. Réponds avec :
+1. Une phrase courte en français qui résume ce que tu changes.
+2. Un ou plusieurs blocs de modification, dans ce format exact :
+
+${MARK_SEARCH}
+(texte EXACT copié du fichier, à remplacer)
+${MARK_DIVIDER}
+(nouveau texte)
+${MARK_REPLACE}
+
+Règles :
+- Le texte SEARCH doit être copié à l'identique (espaces et retours à la ligne compris) et n'apparaître qu'UNE seule fois dans le fichier : ajoute assez de lignes de contexte pour qu'il soit unique.
+- Fais des modifications minimales et ciblées. Ne réécris pas ce qui n'a pas besoin de changer.
+- Pour ajouter du contenu, prends comme SEARCH une ligne existante et mets dans REPLACE cette ligne suivie du nouveau contenu.
+- Conserve les ids chatBox, userInput, sendBtn, settingsModal, ainsi que le moteur d'ordres, les Réglages, la fonction runArchitectAI et la synchronisation GitHub, sauf demande explicite.
+- N'écris jamais de token, de clé API ou de mot de passe dans le code.
+- Reste en un seul fichier autonome, sans bibliothèque externe, compatible mobile (iPhone et Android).
+- Ne produis rien d'autre que ta phrase d'explication et les blocs, sans bloc de code Markdown.
+- Si l'ordre est impossible ou dangereux, explique pourquoi en une phrase et ne produis aucun bloc.`;
+    }
+
+    function parseEdits(text) {
+      const S = MARK_SEARCH + '\n';
+      const D = '\n' + MARK_DIVIDER + '\n';
+      const edits = [];
+      let pos = 0;
+      while (true) {
+        const a = text.indexOf(S, pos);
+        if (a < 0) break;
+        const b = text.indexOf(D, a + S.length);
+        if (b < 0) break;
+        const c = text.indexOf(MARK_REPLACE, b + D.length);
+        if (c < 0) break;
+        let replacement = text.slice(b + D.length, c);
+        if (replacement.endsWith('\n')) replacement = replacement.slice(0, -1);
+        edits.push({ old: text.slice(a + S.length, b), new: replacement });
+        pos = c + MARK_REPLACE.length;
+      }
+      return edits;
+    }
+
+    function applyEdits(source, edits) {
+      let out = source;
+      edits.forEach((e, i) => {
+        if (!e.old.trim()) throw new Error(`modification ${i + 1} : bloc SEARCH vide`);
+        const count = out.split(e.old).length - 1;
+        if (count !== 1) {
+          throw new Error(`modification ${i + 1} : le texte à remplacer apparaît ${count} fois (attendu : 1)`);
+        }
+        out = out.replace(e.old, () => e.new);
+      });
+      return out;
+    }
+
+    function validateHtml(html) {
+      if (!/<\/body>/i.test(html) || !/<\/html>\s*$/i.test(html.trim())) {
+        throw new Error('structure HTML incomplète (</body> ou </html> manquant)');
+      }
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      ['chatBox', 'userInput', 'sendBtn', 'settingsModal'].forEach(id => {
+        if (!doc.getElementById(id)) throw new Error(`l'élément #${id} a disparu`);
+      });
+      if (!html.includes('function runArchitectAI')) {
+        throw new Error("l'Architecte ne doit pas se supprimer lui-même");
+      }
+      doc.querySelectorAll('script').forEach(sc => {
+        if (sc.src) return;
+        try { new Function(sc.textContent); }
+        catch (e) { throw new Error('erreur de syntaxe JavaScript : ' + e.message); }
+      });
+    }
+
+    function stripVersion(text) {
+      return text.replace(/[ \t]*<\!-- architect-version: [^>]*-->[ \t]*\n?/g, '');
+    }
+
+    function ghConfig() {
+      const user = lsGet('gh_user') || DEFAULT_USER;
+      const repo = lsGet('gh_repo') || DEFAULT_REPO;
+      const token = lsGet('gh_token');
+      return {
+        token,
+        base: `https://api.github.com/repos/${encodeURIComponent(user)}/${encodeURIComponent(repo)}/contents`,
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      };
+    }
+
+    async function ghGetFile(path) {
+      const gh = ghConfig();
+      const res = await fetch(`${gh.base}/${path}`, { headers: gh.headers, cache: 'no-store' });
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`GitHub, lecture de ${path} (${res.status}) ${err.message || ''}`.trim());
+      }
+      const data = await res.json();
+      return { sha: data.sha, text: base64ToUtf8(data.content) };
+    }
+
+    async function ghPutFile(path, text, message, sha) {
+      const gh = ghConfig();
+      const res = await fetch(`${gh.base}/${path}`, {
+        method: 'PUT',
+        headers: { ...gh.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message.slice(0, 200), content: utf8ToBase64(text), sha })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`GitHub, écriture de ${path} (${res.status}) ${err.message || ''}`.trim());
+      }
+    }
+
+    async function callClaude(messages) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': lsGet('ai_key'),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: lsGet('ai_model') || 'claude-sonnet-5-5',
+          max_tokens: 12000,
+          system: systemPrompt(),
+          messages
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const detail = err.error && err.error.message ? err.error.message : '';
+        throw new Error(`API Claude (${res.status}) ${detail}`.trim());
+      }
+      const data = await res.json();
+      return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+    }
+
+    async function runArchitectAI(instruction) {
+      if (!lsGet('gh_token') || !lsGet('ai_key')) {
+        appendMessage('system', "❓ [ARCHITECTE]: Ordre non reconnu comme ordre simple. Pour que l'IA modifie le code, renseignez le token GitHub ET la clé API Anthropic dans les Réglages. Tapez « aide » pour la liste des ordres simples.");
+        return;
+      }
+
+      appendMessage('system', '📖 [ARCHITECTE]: Lecture du code actuel sur GitHub...');
+      const current = await ghGetFile('index.html');
+      if (!current) throw new Error('index.html introuvable dans le dépôt.');
+      const source = stripVersion(current.text);
+
+      appendMessage('system', "🧠 [ARCHITECTE]: L'IA analyse l'ordre et écrit le code (peut prendre jusqu'à une minute)...");
+      const messages = [{
+        role: 'user',
+        content: `Voici le fichier index.html actuel :\n<fichier>\n${source}\n</fichier>\n\nOrdre de l'utilisateur : ${instruction}`
+      }];
+
+      let answer = await callClaude(messages);
+      let newHtml = null;
+      let lastError = null;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const edits = parseEdits(answer);
+        if (!edits.length) {
+          appendMessage('system', '💬 [ARCHITECTE]: ' + answer.trim().slice(0, 600));
+          return; // aucune modification (question ou refus)
+        }
+        try {
+          newHtml = applyEdits(source, edits);
+          validateHtml(newHtml);
+          lastError = null;
+          break;
+        } catch (e) {
+          lastError = e;
+          if (attempt === 0) {
+            appendMessage('system', `🔧 [ARCHITECTE]: Correction nécessaire (${e.message}). Nouvel essai...`);
+            messages.push(
+              { role: 'assistant', content: answer },
+              { role: 'user', content: `Tes modifications ont échoué : ${e.message}\nRecommence avec des blocs corrects, en copiant exactement le texte du fichier.` }
+            );
+            answer = await callClaude(messages);
+          }
+        }
+      }
+      if (lastError) throw new Error('modification invalide, rien n\'a été envoyé : ' + lastError.message);
+
+      const summary = answer.split(MARK_SEARCH)[0].trim();
+      if (summary) appendMessage('system', '📝 [ARCHITECTE]: ' + summary.slice(0, 500));
+
+      const version = new Date().toISOString();
+      const finalHtml = newHtml.replace('</body>', () => '  <' + '!-- architect-version: ' + version + ' --' + '>\n</body>');
+
+      appendMessage('system', "💾 [ARCHITECTE]: Sauvegarde de l'ancienne version, puis envoi sur GitHub...");
+      const backup = await ghGetFile('index.backup.html');
+      await ghPutFile('index.backup.html', current.text, `Architect: sauvegarde avant « ${instruction} »`, backup ? backup.sha : undefined);
+      await ghPutFile('index.html', finalHtml, `Architect: ${instruction}`, current.sha);
+
+      appendMessage('system', '🚀 [ARCHITECTE]: Envoyé ! GitHub Pages met le site à jour (30 à 90 s), la page se rechargera toute seule.');
+      waitForDeploy(version);
+    }
+
+    async function waitForDeploy(version) {
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const res = await fetch(location.pathname + '?cb=' + Date.now(), { cache: 'no-store' });
+          if (res.ok && (await res.text()).includes(version)) {
+            appendMessage('system', '✅ [ARCHITECTE]: Mise à jour en ligne, rechargement...');
+            setTimeout(() => location.reload(), 800);
+            return;
+          }
+        } catch (e) { /* on réessaie */ }
+      }
+      appendMessage('system', '⏳ [ARCHITECTE]: Le déploiement prend plus de temps que prévu. Rechargez la page dans un instant.');
+    }
+
+    // ---------- Démarrage ----------
+    loadState();
+    applyState();
+    if (!lsGet('sl_state')) loadRemoteConfig();
   </script>
 </body>
 </html>
