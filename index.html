@@ -126,13 +126,13 @@
     }
 
     .console-section {
-      flex: 1;
       display: flex;
       flex-direction: column;
       background: var(--panel-bg);
       border: 1px solid rgba(157, 78, 221, 0.3);
       border-radius: 12px;
       padding: 15px;
+      margin-bottom: 20px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
 
@@ -162,9 +162,8 @@
     }
 
     .chat-box {
-      flex: 1;
-      min-height: 200px;
-      max-height: 350px;
+      min-height: 180px;
+      max-height: 250px;
       overflow-y: auto;
       background: #0a0b10;
       border-radius: 8px;
@@ -221,6 +220,32 @@
       border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    /* ZONE DES MODIFICATIONS VISUELLES LÉGENDIAIRES */
+    .updates-section {
+      background: var(--panel-bg);
+      border: 1px dashed var(--accent-blue);
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .updates-header {
+      font-size: 0.85rem;
+      color: var(--accent-blue);
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .update-card {
+      background: rgba(0, 210, 255, 0.05);
+      border-left: 3px solid var(--accent-blue);
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
     }
 
     .modal {
@@ -291,13 +316,21 @@
 
     <div class="chat-box" id="chatBox">
       <div class="message msg-system">
-        [SYSTÈME]: Interface sécurisée prête. Configurez vos identifiants et votre Build Hook dans les RÉGLAGES ⚙️.
+        [SYSTÈME]: Interface sécurisée prête. Donnez un ordre visuel à l'Architecte !
       </div>
     </div>
 
     <div class="input-area">
       <input type="text" id="userInput" placeholder="Donnez un ordre..." onkeypress="handleKeyPress(event)">
       <button class="btn-send" onclick="sendMessage()">ENVOYER</button>
+    </div>
+  </div>
+
+  <!-- Zone d'affichage des modifications de l'Architecte -->
+  <div class="updates-section">
+    <div class="updates-header">🛠️ JOURNAL DE L'ARCHITECTE (INJECTIONS HTML)</div>
+    <div id="architectLog">
+      <!-- Les nouvelles injections de l'Architecte s'afficheront ICI visuellement -->
     </div>
   </div>
 
@@ -320,10 +353,6 @@
       <div class="field">
         <label>URL du Netlify Build Hook</label>
         <input type="text" id="netlifyHook" placeholder="https://api.netlify.com/build_hooks/...">
-      </div>
-      <div class="field">
-        <label>Restaurer une sauvegarde (JSON)</label>
-        <input type="file" id="importFile" onchange="importData(event)" style="color: var(--text-dim); border: none;">
       </div>
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button class="btn-send" style="flex: 1;" onclick="saveSettings()">SAUVEGARDER</button>
@@ -368,7 +397,7 @@
       localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
       localStorage.setItem('netlify_hook', document.getElementById('netlifyHook').value.trim());
       closeSettings();
-      appendMessage('system', '[SYSTÈME]: Paramètres enregistrés en toute sécurité dans le navigateur.');
+      appendMessage('system', '[SYSTÈME]: Paramètres enregistrés.');
     }
 
     function appendMessage(type, text) {
@@ -397,28 +426,26 @@
         const hookUrl = localStorage.getItem('netlify_hook');
 
         if (!user || !repo || !token) {
-          appendMessage('system', '⚠️ [ARCHITECTE]: Identifiants GitHub manquants. Ouvrez les RÉGLAGES ⚙️ !');
+          appendMessage('system', '⚠️ [ARCHITECTE]: Config manquante !');
           openSettings();
           return;
         }
 
-        appendMessage('system', '⚡ [ARCHITECTE]: Enregistrement du commit sur GitHub...');
+        appendMessage('system', '⚡ [ARCHITECTE]: Injection visuelle dans le code source...');
         const success = await commitCodeToGitHub(user, repo, token, text);
 
         if (success && hookUrl) {
-          appendMessage('system', '🚀 [ARCHITECTE]: Déclenchement du déploiement Netlify via le Build Hook...');
+          appendMessage('system', '🚀 [ARCHITECTE]: Lancement du Build Netlify...');
           await triggerNetlifyBuild(hookUrl);
         }
-
       } else {
-        // Logique Régulateur
         playerData.xp += 50;
         if (playerData.xp >= playerData.maxXp) {
           playerData.level += 1;
           playerData.xp = 0;
-          appendMessage('system', `🎉 [RÉGULATEUR]: NIVEAU SUPÉRIEUR ! Niveau atteint : ${playerData.level}`);
+          appendMessage('system', `🎉 [RÉGULATEUR]: NIVEAU SUPÉRIEUR ! Niveau ${playerData.level}`);
         } else {
-          appendMessage('system', `[RÉGULATEUR]: Analyse validée pour "${text}". +50 XP accordés.`);
+          appendMessage('system', `[RÉGULATEUR]: Ordre validé. +50 XP.`);
         }
         localStorage.setItem('sl_player', JSON.stringify(playerData));
         initPlayerUI();
@@ -436,16 +463,21 @@
           }
         });
 
-        if (!getRes.ok) {
-          const errData = await getRes.json();
-          appendMessage('system', `❌ Erreur GitHub (${getRes.status}): ${errData.message || 'Fichier introuvable'}`);
-          return false;
-        }
+        if (!getRes.ok) return false;
 
         const fileData = await getRes.json();
         const currentSha = fileData.sha;
         const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
-        const updatedContent = currentContent + `\n<!-- Architect Update: ${instruction} -->`;
+
+        // INJECTION VISUELLE DANS LE HTML (Création d'une carte HTML visible sur la page)
+        const dateStr = new Date().toLocaleTimeString();
+        const visualCardHTML = `<div class="update-card">⚡ <b>[Architecte ${dateStr}]</b> : ${instruction}</div>`;
+        
+        // On insère le nouveau bloc HTML directement dans la div #architectLog du fichier
+        const updatedContent = currentContent.replace(
+          '<div id="architectLog">',
+          `<div id="architectLog">\n      ${visualCardHTML}`
+        );
 
         const putRes = await fetch(apiUrl, {
           method: 'PUT',
@@ -455,69 +487,30 @@
             'Accept': 'application/vnd.github.v3+json'
           },
           body: JSON.stringify({
-            message: `Architect: ${instruction}`,
+            message: `Architect Visual Update: ${instruction}`,
             content: btoa(unescape(encodeURIComponent(updatedContent))),
             sha: currentSha
           })
         });
 
         if (putRes.ok) {
-          appendMessage('system', '✅ [ARCHITECTE]: Commit validé sur GitHub !');
+          appendMessage('system', '✅ [ARCHITECTE]: Nouvelle carte HTML injectée sur GitHub !');
           return true;
-        } else {
-          const putErr = await putRes.json();
-          appendMessage('system', `❌ Échec du commit: ${putErr.message}`);
-          return false;
         }
+        return false;
       } catch (err) {
-        appendMessage('system', `❌ Erreur réseau GitHub: ${err.message}`);
         return false;
       }
     }
 
     async function triggerNetlifyBuild(hookUrl) {
       try {
-        const res = await fetch(hookUrl, { method: 'POST' });
-        if (res.ok) {
-          appendMessage('system', '✅ [NETLIFY]: Build déclenché avec succès ! Votre application sera mise à jour dans 20 secondes.');
-        } else {
-          appendMessage('system', '⚠️ [NETLIFY]: Le Build Hook a répondu avec une erreur.');
-        }
-      } catch (err) {
-        appendMessage('system', '❌ [NETLIFY]: Erreur réseau lors de l\'appel du Build Hook.');
-      }
-    }
-
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playerData));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `solo_leveling_save_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      appendMessage('system', '💾 [SAUVEGARDE]: Fichier JSON exporté avec succès !');
-    }
-
-    function importData(event) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          playerData = JSON.parse(e.target.result);
-          localStorage.setItem('sl_player', JSON.stringify(playerData));
-          initPlayerUI();
-          appendMessage('system', '🔄 [RESTAURATION]: Données chargées avec succès !');
-          closeSettings();
-        } catch (err) {
-          alert('Fichier de sauvegarde corrompu ou invalide.');
-        }
-      };
-      reader.readAsText(event.target.files[0]);
+        await fetch(hookUrl, { method: 'POST' });
+        appendMessage('system', '✅ [NETLIFY]: Déploiement en cours. Actualise ton navigateur dans 15 secondes !');
+      } catch (err) {}
     }
 
     initPlayerUI();
   </script>
 </body>
 </html>
-<!-- Architect Update: change le titre en vert neon -->
-<!-- Architect Update: change le titre en Rouge -->
