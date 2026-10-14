@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Solo Leveling System</title>
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a10">
+
+  <style>
+    :root {
+      --bg-color: #0d0e15;
+      --panel-bg: #151828;
+      --accent-blue: #00d2ff;
+      --accent-purple: #9d4edd;
+      --text-main: #e0e6ed;
+      --text-dim: #7a889b;
+      --danger: #ff0055;
+      --success: #00ff88;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent-blue);
+      text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    }
+
+    .header-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s;
+    }
+
+    .btn-icon:hover {
+      background: var(--accent-blue);
+      color: #000;
+      box-shadow: 0 0 10px var(--accent-blue);
+    }
+
+    .status-card {
+      background: var(--panel-bg);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .title-tag {
+      color: var(--accent-purple);
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    .stat-bar-container {
+      margin-top: 10px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .bar {
+      height: 8px;
+      background: #0a0b10;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+      width: 45%;
+      transition: width 0.5s ease;
+    }
+
+    .console-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      border: 1px solid rgba(157, 78, 221, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-dim);
+    }
+
+    .tab.active {
+      border-color: var(--accent-purple);
+      color: var(--text-main);
+      background: rgba(157, 78, 221, 0.15);
+      box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+    }
+
+    .chat-box {
+      flex: 1;
+      min-height: 200px;
+      max-height: 350px;
+      overflow-y: auto;
+      background: #0a0b10;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .message {
+      padding: 8px 12px;
+      border-radius: 6px;
+      max-width: 85%;
+      line-height: 1.4;
+    }
+
+    .msg-system {
+      background: rgba(0, 210, 255, 0.1);
+      border-left: 3px solid var(--accent-blue);
+      align-self: flex-start;
+      color: var(--text-main);
+    }
+
+    .msg-user {
+      background: rgba(157, 78, 221, 0.2);
+      border-right: 3px solid var(--accent-purple);
+      align-self: flex-end;
+      color: #fff;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #0a0b10;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .btn-send {
+      background: var(--accent-purple);
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: var(--panel-bg);
+      border: 1px solid var(--accent-blue);
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px; }
+    .field input { width: 100%; padding: 8px; background: #0a0b10; border: 1px solid #333; color: #fff; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SYSTEM // SOLO LEVELING</h1>
+    <div class="header-btns">
+      <button class="btn-icon" onclick="exportData()">💾 SAUVEGARDE</button>
+      <button class="btn-icon" onclick="openSettings()">⚙️ CONFIG</button>
+    </div>
+  </header>
+
+  <!-- Player Status Card -->
+  <div class="status-card">
+    <div class="status-header">
+      <div>
+        <div class="title-tag">MONARQUE DES OMBRES</div>
+        <h2 id="playerName">SUNG JIN-WOO</h2>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 0.8rem; color: var(--text-dim);">NIVEAU</span>
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-blue);" id="playerLevel">18</div>
+      </div>
+    </div>
+
+    <div class="stat-bar-container">
+      <div class="stat-label">
+        <span>EXPÉRIENCE</span>
+        <span id="xpText">450 / 1000</span>
+      </div>
+      <div class="bar">
+        <div class="bar-fill" id="xpBar" style="width: 45%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Console Section -->
+  <div class="console-section">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('architecte')">🛠️ ARCHITECTE (GITHUB)</div>
+      <div class="tab" onclick="switchTab('regulateur')">📊 RÉGULATEUR</div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+      <div class="message msg-system">
+        [SYSTÈME]: Interface sécurisée prête. Utilisez l'icône CONFIG ⚙️ pour renseigner vos identifiants GitHub.
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Donnez un ordre..." onkeypress="handleKeyPress(event)">
+      <button class="btn-send" onclick="sendMessage()">ENVOYER</button>
+    </div>
+  </div>
+
+  <!-- Modal Config -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <h2 style="color: var(--accent-blue); margin-bottom: 15px;">⚙️ CONFIGURATION SÉCURISÉE</h2>
+      <div class="field">
+        <label>Pseudo GitHub</label>
+        <input type="text" id="ghUser" placeholder="ex: mon-pseudo">
+      </div>
+      <div class="field">
+        <label>Nom du Dépôt</label>
+        <input type="text" id="ghRepo" placeholder="solo-leveling-system">
+      </div>
+      <div class="field">
+        <label>Token GitHub (Classic / PAT)</label>
+        <input type="password" id="ghToken" placeholder="ghp_...">
+      </div>
+      <div class="field">
+        <label>Restaurer une sauvegarde (JSON)</label>
+        <input type="file" id="importFile" onchange="importData(event)" style="color: var(--text-dim); border: none;">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-send" style="flex: 1;" onclick="saveSettings()">SAUVEGARDER</button>
+        <button class="btn-icon" onclick="closeSettings()">FERMER</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeAgent = 'architecte';
+    let playerData = JSON.parse(localStorage.getItem('sl_player')) || { name: 'SUNG JIN-WOO', level: 18, xp: 450, maxXp: 1000 };
+
+    function initPlayerUI() {
+      document.getElementById('playerName').textContent = playerData.name;
+      document.getElementById('playerLevel').textContent = playerData.level;
+      document.getElementById('xpText').textContent = `${playerData.xp} / ${playerData.maxXp}`;
+      document.getElementById('xpBar').style.width = `${(playerData.xp / playerData.maxXp) * 100}%`;
+    }
+
+    function switchTab(agent) {
+      activeAgent = agent;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      appendMessage('system', `[SYSTÈME]: Agent ${agent.toUpperCase()} sélectionné.`);
+    }
+
+    function openSettings() {
+      document.getElementById('ghUser').value = localStorage.getItem('gh_user') || '';
+      document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || 'solo-leveling-system';
+      document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function saveSettings() {
+      localStorage.setItem('gh_user', document.getElementById('ghUser').value.trim());
+      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
+      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
+      closeSettings();
+      appendMessage('system', '[SYSTÈME]: Paramètres GitHub enregistrés en toute sécurité dans le navigateur.');
+    }
+
+    function appendMessage(type, text) {
+      const chatBox = document.getElementById('chatBox');
+      const msg = document.createElement('div');
+      msg.className = `message msg-${type}`;
+      msg.textContent = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      input.value = '';
+
+      if (activeAgent === 'architecte') {
+        const user = localStorage.getItem('gh_user');
+        const repo = localStorage.getItem('gh_repo');
+        const token = localStorage.getItem('gh_token');
+
+        if (!user || !repo || !token) {
+          appendMessage('system', '⚠️ [ARCHITECTE]: Identifiants GitHub manquants. Ouvrez les RÉGLAGES ⚙️ !');
+          openSettings();
+          return;
+        }
+
+        appendMessage('system', '⚡ [ARCHITECTE]: Connexion à l\'API GitHub (index.html)...');
+        await commitCodeToGitHub(user, repo, token, text);
+
+      } else {
+        // Logique Régulateur
+        playerData.xp += 50;
+        if (playerData.xp >= playerData.maxXp) {
+          playerData.level += 1;
+          playerData.xp = 0;
+          appendMessage('system', `🎉 [RÉGULATEUR]: NIVEAU SUPÉRIEUR ! Niveau atteint : ${playerData.level}`);
+        } else {
+          appendMessage('system', `[RÉGULATEUR]: Analyse validée pour "${text}". +50 XP accordés.`);
+        }
+        localStorage.setItem('sl_player', JSON.stringify(playerData));
+        initPlayerUI();
+      }
+    }
+
+    // Gestion propre du commit GitHub avec la casse exacte "index.html"
+    async function commitCodeToGitHub(user, repo, token, instruction) {
+      const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/index.html`;
+
+      try {
+        // 1. Récupérer le SHA actuel du fichier
+        const getRes = await fetch(apiUrl, {
+          headers: { 
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (!getRes.ok) {
+          const errData = await getRes.json();
+          appendMessage('system', `❌ Erreur GitHub (${getRes.status}): ${errData.message || 'Fichier introuvable'}`);
+          return;
+        }
+
+        const fileData = await getRes.json();
+        const currentSha = fileData.sha;
+
+        // Décoder le contenu existant pour y intégrer la modification
+        const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
+        const updatedContent = currentContent + `\n<!-- Architect Update: ${instruction} -->`;
+
+        // 2. Envoyer le nouveau commit (PUT)
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          body: JSON.stringify({
+            message: `Architect: ${instruction}`,
+            content: btoa(unescape(encodeURIComponent(updatedContent))),
+            sha: currentSha
+          })
+        });
+
+        if (putRes.ok) {
+          appendMessage('system', '✅ [ARCHITECTE]: Commit réussi sur GitHub ! Netlify va lancer le déploiement.');
+        } else {
+          const putErr = await putRes.json();
+          appendMessage('system', `❌ Échec du commit: ${putErr.message}`);
+        }
+
+      } catch (err) {
+        appendMessage('system', `❌ Erreur réseau: ${err.message}`);
+        console.error(err);
+      }
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playerData));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `solo_leveling_save_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      appendMessage('system', '💾 [SAUVEGARDE]: Fichier JSON exporté avec succès !');
+    }
+
+    function importData(event) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          playerData = JSON.parse(e.target.result);
+          localStorage.setItem('sl_player', JSON.stringify(playerData));
+          initPlayerUI();
+          appendMessage('system', '🔄 [RESTAURATION]: Données chargées avec succès !');
+          closeSettings();
+        } catch (err) {
+          alert('Fichier de sauvegarde corrompu ou invalide.');
+        }
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+
+    initPlayerUI();
+  </script>
+</body>
+</html>
