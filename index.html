@@ -531,6 +531,11 @@
       if (activeAgent === 'architecte') {
         setBusy(true);
         try {
+          if (/^(test|diagnostic)$/i.test(text)) {
+            await runDiagnostic();
+            setBusy(false);
+            return;
+          }
           const res = applyDirective(text); // ordres simples : instantanés et gratuits
           if (res.ok) {
             appendMessage('system', '✅ [ARCHITECTE]: ' + res.msg);
@@ -636,6 +641,7 @@
       '• nom: Sung Jin-Woo',
       '• app: MON SYSTÈME',
       '• reset (tout remettre par défaut)',
+      '• test (diagnostic : vérifie GitHub et la clé IA)',
       '',
       'Tout autre ordre est envoyé à l\'IA, qui modifie le code et le visuel (ex : « ajoute un onglet Quêtes », « rends les cartes plus arrondies »).'
     ].join('\n');
@@ -984,6 +990,54 @@ Règles :
         } catch (e) { /* on réessaie */ }
       }
       appendMessage('system', '⏳ [ARCHITECTE]: Le déploiement prend plus de temps que prévu. Rechargez la page dans un instant.');
+    }
+
+    // ---------- Diagnostic : « test » dans la console de l'Architecte ----------
+    async function runDiagnostic() {
+      const gh = ghConfig();
+      const say = (ok, msg) => appendMessage('system', (ok ? '✅ ' : '❌ ') + msg);
+
+      appendMessage('system', `🔎 [DIAGNOSTIC]: page ouverte sur ${location.origin}${location.pathname}`);
+
+      if (!gh.token) {
+        say(false, 'Token GitHub absent : renseignez-le dans les Réglages.');
+      } else {
+        try {
+          const res = await fetch(gh.base.replace(/\/contents$/, ''), { headers: gh.headers, cache: 'no-store' });
+          if (!res.ok) {
+            say(false, `Dépôt inaccessible (${res.status}) : vérifiez le nom d'utilisateur, le nom du dépôt et le token.`);
+          } else {
+            const repo = await res.json();
+            say(true, `Dépôt trouvé (branche ${repo.default_branch}).`);
+            if (repo.permissions) {
+              say(!!repo.permissions.push, repo.permissions.push
+                ? "Droit d'écriture OK."
+                : "Pas de droit d'écriture : le token doit avoir « Contents : Read and write ».");
+            }
+            const file = await ghGetFile('index.html');
+            if (!file) {
+              say(false, 'index.html est introuvable à la racine du dépôt.');
+            } else if (file.text.includes('function runArchitectAI')) {
+              say(true, 'Le dépôt contient la dernière version de index.html.');
+            } else {
+              say(false, "Le dépôt contient encore l'ANCIENNE version de index.html : remplacez-le par le nouveau fichier.");
+            }
+          }
+        } catch (e) {
+          say(false, 'GitHub : ' + e.message);
+        }
+      }
+
+      if (!lsGet('ai_key')) {
+        say(false, 'Clé API Anthropic absente : renseignez-la dans les Réglages.');
+      } else {
+        try {
+          await callClaude([{ role: 'user', content: 'Réponds uniquement : ok' }]);
+          say(true, 'Clé API Anthropic valide.');
+        } catch (e) {
+          say(false, 'Anthropic : ' + e.message);
+        }
+      }
     }
 
     // ---------- Démarrage ----------
