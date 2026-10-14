@@ -2,11 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Solo Leveling System</title>
-  
+
   <!-- PWA Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0a10">
 
@@ -27,7 +28,14 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-user-select: none;
       user-select: none;
+    }
+
+    /* Indispensable sur iOS : sinon impossible de taper dans les champs */
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
     }
 
     body {
@@ -36,7 +44,10 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      min-height: 100dvh;
       padding: 15px;
+      padding-top: calc(15px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
     }
 
     header {
@@ -46,10 +57,11 @@
       padding-bottom: 15px;
       border-bottom: 1px solid rgba(0, 210, 255, 0.2);
       margin-bottom: 20px;
+      gap: 10px;
     }
 
     h1 {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       text-transform: uppercase;
       letter-spacing: 2px;
       color: var(--accent-blue);
@@ -64,6 +76,7 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.9rem;
+      white-space: nowrap;
       transition: all 0.3s;
     }
 
@@ -95,9 +108,7 @@
       font-size: 0.9rem;
     }
 
-    .stat-bar-container {
-      margin-top: 10px;
-    }
+    .stat-bar-container { margin-top: 10px; }
 
     .stat-label {
       font-size: 0.8rem;
@@ -179,6 +190,7 @@
       border-radius: 6px;
       max-width: 85%;
       line-height: 1.4;
+      word-wrap: break-word;
     }
 
     .msg-system {
@@ -200,18 +212,20 @@
       gap: 10px;
     }
 
-    input[type="text"] {
+    input[type="text"],
+    input[type="password"] {
       flex: 1;
       background: #0a0b10;
       border: 1px solid rgba(255, 255, 255, 0.1);
       padding: 12px;
       border-radius: 6px;
       color: #fff;
-      font-size: 0.9rem;
+      font-size: 16px; /* évite le zoom automatique sur iOS */
       outline: none;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus,
+    input[type="password"]:focus {
       border-color: var(--accent-purple);
     }
 
@@ -226,7 +240,12 @@
       transition: all 0.3s;
     }
 
-    .btn-send:hover {
+    .btn-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-send:hover:not(:disabled) {
       box-shadow: 0 0 12px var(--accent-purple);
     }
 
@@ -258,9 +277,7 @@
       margin-bottom: 15px;
     }
 
-    .field {
-      margin-bottom: 12px;
-    }
+    .field { margin-bottom: 12px; }
 
     .field label {
       display: block;
@@ -269,9 +286,7 @@
       margin-bottom: 5px;
     }
 
-    .field input {
-      width: 100%;
-    }
+    .field input { width: 100%; }
 
     /* Avatar & Galerie */
     .avatar {
@@ -282,6 +297,7 @@
       box-shadow: 0 0 12px rgba(157, 78, 221, 0.5);
       margin-right: 12px;
       object-fit: cover;
+      background: #0a0b10;
     }
 
     .gallery {
@@ -309,6 +325,7 @@
       width: 100%;
       aspect-ratio: 3 / 2;
       object-fit: cover;
+      background: #0a0b10;
     }
 
     .gallery figcaption {
@@ -334,8 +351,8 @@
       <div style="display: flex; align-items: center;">
         <img class="avatar" src="images/monarque.svg" alt="Silhouette du Monarque des Ombres">
         <div>
-        <div class="title-tag">MONARQUE DES OMBRES</div>
-        <h2>SUNG JIN-WOO</h2>
+          <div class="title-tag">MONARQUE DES OMBRES</div>
+          <h2>SUNG JIN-WOO</h2>
         </div>
       </div>
       <div style="text-align: right;">
@@ -375,19 +392,19 @@
   <!-- Console Agents -->
   <div class="console-section">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('architecte')">🛠️ ARCHITECTE (AUTO-CODE)</div>
-      <div class="tab" onclick="switchTab('regulateur')">📊 RÉGULATEUR</div>
+      <div class="tab active" data-agent="architecte">🛠️ ARCHITECTE (AUTO-CODE)</div>
+      <div class="tab" data-agent="regulateur">📊 RÉGULATEUR</div>
     </div>
 
     <div class="chat-box" id="chatBox">
       <div class="message msg-system">
-        [SYSTÈME]: Agent Architecte connecté avec accès GitHub & CI/CD. Prêt pour l'auto-codage.
+        [SYSTÈME]: Agent Architecte connecté avec accès GitHub &amp; CI/CD. Prêt pour l'auto-codage.
       </div>
     </div>
 
     <div class="input-area">
-      <input type="text" id="userInput" placeholder="Donnez un ordre de modification au Système..." onkeypress="handleKeyPress(event)">
-      <button class="btn-send" onclick="sendMessage()">ENVOYER</button>
+      <input type="text" id="userInput" placeholder="Donnez un ordre de modification au Système..." autocomplete="off">
+      <button class="btn-send" id="sendBtn">ENVOYER</button>
     </div>
   </div>
 
@@ -396,46 +413,58 @@
     <div class="modal-content">
       <h2>⚙️ CONFIGURATION GITHUB</h2>
       <div class="field">
-        <label>Nom d'utilisateur GitHub</label>
-        <input type="text" id="ghUser" placeholder="ex: mon-pseudo">
+        <label for="ghUser">Nom d'utilisateur GitHub</label>
+        <input type="text" id="ghUser" placeholder="ex: mon-pseudo" autocomplete="off" autocapitalize="off">
       </div>
       <div class="field">
-        <label>Nom du Dépôt</label>
-        <input type="text" id="ghRepo" value="solo-leveling-system">
+        <label for="ghRepo">Nom du Dépôt</label>
+        <input type="text" id="ghRepo" placeholder="solo-leveling-system" autocomplete="off" autocapitalize="off">
       </div>
       <div class="field">
-        <label>Token GitHub (PAT / Classic)</label>
-        <input type="text" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
+        <label for="ghToken">Token GitHub (PAT)</label>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" autocapitalize="off">
       </div>
       <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn-send" style="flex: 1;" onclick="saveSettings()">SAUVEGARDER</button>
+        <button class="btn-send" style="flex: 1; padding: 12px;" onclick="saveSettings()">SAUVEGARDER</button>
         <button class="btn-icon" onclick="closeSettings()">FERMER</button>
       </div>
     </div>
   </div>
 
- <script>
-    // Configuration
+  <script>
+    // Configuration par défaut (AUCUN secret dans le code : le token se saisit dans les Réglages
+    // et reste uniquement dans le localStorage de cet appareil)
     const DEFAULT_USER = "warlissondasilva-spec";
     const DEFAULT_REPO = "solo-leveling-system";
-    const DEFAULT_TOKEN = "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";
 
-    // Dynamic Variables
     let activeAgent = 'architecte';
+    let busy = false;
 
-    // Tabs Switcher
-    function switchTab(agent) {
+    // ---------- Stockage sûr (le localStorage peut être indisponible) ----------
+    function lsGet(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function lsSet(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) { /* ignoré */ }
+    }
+
+    // ---------- Onglets ----------
+    function switchTab(agent, el) {
       activeAgent = agent;
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
+      if (el) el.classList.add('active');
       appendMessage('system', `[CONVERSATION]: Basculé sur l'agent ${agent.toUpperCase()}.`);
     }
 
-    // Modal Control
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.agent, tab));
+    });
+
+    // ---------- Modal ----------
     function openSettings() {
-      document.getElementById('ghUser').value = localStorage.getItem('gh_user') || DEFAULT_USER;
-      document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || DEFAULT_REPO;
-      document.getElementById('ghToken').value = localStorage.getItem('gh_token') || DEFAULT_TOKEN;
+      document.getElementById('ghUser').value = lsGet('gh_user') || DEFAULT_USER;
+      document.getElementById('ghRepo').value = lsGet('gh_repo') || DEFAULT_REPO;
+      document.getElementById('ghToken').value = lsGet('gh_token') || '';
       document.getElementById('settingsModal').style.display = 'flex';
     }
 
@@ -444,14 +473,14 @@
     }
 
     function saveSettings() {
-      localStorage.setItem('gh_user', document.getElementById('ghUser').value.trim());
-      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
-      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
+      lsSet('gh_user', document.getElementById('ghUser').value.trim());
+      lsSet('gh_repo', document.getElementById('ghRepo').value.trim());
+      lsSet('gh_token', document.getElementById('ghToken').value.trim());
       closeSettings();
       appendMessage('system', '[SYSTÈME]: Paramètres GitHub sauvegardés avec succès !');
     }
 
-    // Chat Functions
+    // ---------- Chat ----------
     function appendMessage(type, text) {
       const chatBox = document.getElementById('chatBox');
       const msg = document.createElement('div');
@@ -461,11 +490,22 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function handleKeyPress(e) {
-      if (e.key === 'Enter') sendMessage();
+    function setBusy(state) {
+      busy = state;
+      document.getElementById('sendBtn').disabled = state;
     }
 
+    document.getElementById('userInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
     async function sendMessage() {
+      if (busy) return;
+
       const input = document.getElementById('userInput');
       const text = input.value.trim();
       if (!text) return;
@@ -474,83 +514,95 @@
       input.value = '';
 
       if (activeAgent === 'architecte') {
-        appendMessage('system', '⚡ [ARCHITECTE]: Connexion à l\'API GitHub en cours...');
-        
-        const success = await commitCodeToGitHub(text);
-        if (success) {
+        setBusy(true);
+        appendMessage('system', "⚡ [ARCHITECTE]: Connexion à l'API GitHub en cours...");
+
+        const result = await commitCodeToGitHub(text);
+        if (result.ok) {
           appendMessage('system', '✅ [ARCHITECTE]: Commit réussi ! Netlify déploie la mise à jour...');
         } else {
-          appendMessage('system', '❌ [ARCHITECTE]: Échec du commit. Ouvrez la console (F12) pour voir l\'erreur.');
+          appendMessage('system', `❌ [ARCHITECTE]: Échec du commit — ${result.error}`);
         }
+        setBusy(false);
       } else {
         appendMessage('system', `[RÉGULATEUR]: Analyse de votre message : "${text}". Niveau de fatigue calculé. Quête mise à jour.`);
       }
     }
 
-    // GitHub API Commit Handler Corrected
+    // ---------- Helpers Base64 UTF-8 (remplacent escape/unescape, obsolètes) ----------
+    function base64ToUtf8(b64) {
+      const binary = atob(b64.replace(/\s/g, ''));
+      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    }
+
+    // ---------- Commit GitHub ----------
     async function commitCodeToGitHub(userInstruction) {
-      const ghUser = localStorage.getItem('gh_user') || DEFAULT_USER;
-      const ghRepo = localStorage.getItem('gh_repo') || DEFAULT_REPO;
-      const ghToken = localStorage.getItem('gh_token') || DEFAULT_TOKEN;
+      const ghUser = lsGet('gh_user') || DEFAULT_USER;
+      const ghRepo = lsGet('gh_repo') || DEFAULT_REPO;
+      const ghToken = lsGet('gh_token');
 
       if (!ghUser || !ghRepo || !ghToken) {
-        alert("⚠️ Identifiants manquants dans les Réglages !");
-        return false;
+        openSettings();
+        return { ok: false, error: 'identifiants manquants, renseignez-les dans les Réglages.' };
       }
 
-      try {
-        const url = `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/index.html`;
-        
-        // 1. Récupérer le fichier et son SHA
-        const getRes = await fetch(url, {
-          headers: { 
-            'Authorization': `token ${ghToken}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
+      const url = `https://api.github.com/repos/${encodeURIComponent(ghUser)}/${encodeURIComponent(ghRepo)}/contents/index.html`;
+      const headers = {
+        'Authorization': `Bearer ${ghToken}`,
+        'Accept': 'application/vnd.github+json'
+      };
 
+      try {
+        // 1. Récupérer le fichier et son SHA
+        const getRes = await fetch(url, { headers, cache: 'no-store' });
         if (!getRes.ok) {
-          console.error("Erreur Fetch GitHub:", await getRes.text());
-          return false;
+          const err = await getRes.json().catch(() => ({}));
+          console.error('Erreur Fetch GitHub:', getRes.status, err);
+          return { ok: false, error: `lecture impossible (${getRes.status}) ${err.message || ''}`.trim() };
         }
 
         const fileData = await getRes.json();
-        const currentSha = fileData.sha;
-        
-        // Décoder le contenu HTML actuel
-        let currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
+        const currentContent = base64ToUtf8(fileData.content);
 
-        // Exemple de modification de code par l'Architecte (ajoute un commentaire de version)
-        const updatedContent = currentContent + `\n<!-- Architect Auto-Update: ${userInstruction} -->`;
-
-        // 2. Encoder en Base64 UTF-8 propre
-        const encodedContent = btoa(unescape(encodeURIComponent(updatedContent)));
+        // 2. Modification : note de mise à jour insérée avant </body> (et non après </html>)
+        const safeInstruction = userInstruction.replace(/--/g, '- -');
+        const note = `  <!-- Architect Auto-Update: ${safeInstruction} -->\n`;
+        const updatedContent = currentContent.includes('</body>')
+          ? currentContent.replace('</body>', note + '</body>')
+          : currentContent + '\n' + note;
 
         // 3. Envoyer la mise à jour
         const putRes = await fetch(url, {
           method: 'PUT',
-          headers: {
-            'Authorization': `token ${ghToken}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          },
+          headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: `Architect: ${userInstruction}`,
-            content: encodedContent,
-            sha: currentSha
+            content: utf8ToBase64(updatedContent),
+            sha: fileData.sha
           })
         });
 
         if (!putRes.ok) {
-          const errData = await putRes.json();
-          console.error("Erreur Commit API:", errData);
-          return false;
+          const errData = await putRes.json().catch(() => ({}));
+          console.error('Erreur Commit API:', putRes.status, errData);
+          return { ok: false, error: `écriture refusée (${putRes.status}) ${errData.message || ''}`.trim() };
         }
 
-        return true;
+        return { ok: true };
       } catch (err) {
-        console.error("Erreur secours:", err);
-        return false;
+        console.error('Erreur réseau:', err);
+        return { ok: false, error: 'erreur réseau ou CORS, voir la console.' };
       }
     }
   </script>
