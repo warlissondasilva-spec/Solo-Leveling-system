@@ -133,6 +133,14 @@
       transition: width 0.5s ease;
     }
 
+    /* Quêtes */
+    .quest { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+    .quest.done .q { text-decoration: line-through; color: var(--text-dim); }
+    .quest button { background: none; border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; flex: none; }
+    .quest .del { border-color: transparent; color: var(--text-dim); }
+    .quest .xp { color: var(--accent-purple); font-size: 0.75rem; margin-left: auto; white-space: nowrap; }
+    .quest-empty { color: var(--text-dim); font-size: 0.85rem; padding: 6px 0; }
+
     /* Console Container */
     .console-section {
       flex: 1;
@@ -392,11 +400,17 @@
     </figure>
   </div>
 
+  <!-- Quêtes -->
+  <div class="status-card">
+    <div class="stat-label"><span>QUÊTES</span><span id="questCount"></span></div>
+    <div id="questList"></div>
+  </div>
+
   <!-- Console Agents -->
   <div class="console-section">
     <div class="tabs">
       <div class="tab active" data-agent="architecte">🛠️ ARCHITECTE (AUTO-CODE)</div>
-      <div class="tab" data-agent="regulateur">📊 RÉGULATEUR</div>
+      <div class="tab" data-agent="regulateur">🧭 COACH DE VIE</div>
     </div>
 
     <div class="chat-box" id="chatBox">
@@ -558,7 +572,10 @@
         }
         setBusy(false);
       } else {
-        appendMessage('system', `[RÉGULATEUR]: Analyse de votre message : "${text}". Niveau de fatigue calculé. Quête mise à jour.`);
+        setBusy(true);
+        try { await runCoach(text); }
+        catch (err) { console.error(err); appendMessage('system', `❌ [COACH]: ${err.message}`); }
+        setBusy(false);
       }
     }
 
@@ -1040,9 +1057,164 @@ Règles :
       }
     }
 
+    // ---------- Quêtes + Coach de vie ----------
+    let quests = [];
+    let checkin = null;
+    let coachHistory = [];
+
+    function loadCoach() {
+      try {
+        quests = JSON.parse(lsGet('sl_quests') || '[]');
+        checkin = JSON.parse(lsGet('sl_checkin') || 'null');
+        coachHistory = JSON.parse(lsGet('sl_coach_chat') || '[]');
+      } catch (e) { /* ignoré */ }
+    }
+
+    function saveCoach() {
+      lsSet('sl_quests', JSON.stringify(quests));
+      lsSet('sl_checkin', JSON.stringify(checkin));
+      lsSet('sl_coach_chat', JSON.stringify(coachHistory.slice(-12)));
+    }
+
+    function gainXp(n) {
+      state.xp += n;
+      while (state.xp >= state.xpMax) { state.xp -= state.xpMax; state.level++; appendMessage('system', `⬆️ [SYSTÈME]: NIVEAU SUPÉRIEUR ! Niveau ${state.level}.`); }
+      applyState();
+      saveState();
+    }
+
+    function renderQuests() {
+      const list = document.getElementById('questList');
+      list.innerHTML = '';
+      if (!quests.length) {
+        const empty = document.createElement('div');
+        empty.className = 'quest-empty';
+        empty.textContent = 'Aucune quête. Demandez au Coach de vous en créer.';
+        list.appendChild(empty);
+      }
+      quests.forEach(q => {
+        const row = document.createElement('div');
+        row.className = 'quest' + (q.done ? ' done' : '');
+        const ok = document.createElement('button');
+        ok.textContent = q.done ? '✓' : '';
+        ok.dataset.act = 'done'; ok.dataset.id = q.id;
+        const label = document.createElement('span');
+        label.className = 'q'; label.textContent = q.text;
+        const xp = document.createElement('span');
+        xp.className = 'xp'; xp.textContent = `+${q.xp} XP`;
+        const del = document.createElement('button');
+        del.className = 'del'; del.textContent = '×';
+        del.dataset.act = 'del'; del.dataset.id = q.id;
+        row.append(ok, label, xp, del);
+        list.appendChild(row);
+      });
+      document.getElementById('questCount').textContent = `${quests.filter(q => q.done).length}/${quests.length}`;
+    }
+
+    document.getElementById('questList').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const q = quests.find(x => x.id === btn.dataset.id);
+      if (!q) return;
+      if (btn.dataset.act === 'done' && !q.done) { q.done = true; gainXp(q.xp); appendMessage('system', `✅ [SYSTÈME]: Quête accomplie : +${q.xp} XP.`); }
+      if (btn.dataset.act === 'del') quests = quests.filter(x => x.id !== q.id);
+      saveCoach();
+      renderQuests();
+    });
+
+    const COACH_PROMPT = `Tu es le Coach de vie du Système, dans l'univers de Solo Leveling. Tu parles en français au joueur, sur un ton motivant, bienveillant et réaliste, en réponses courtes (3 à 6 phrases).
+- Tu évalues son état de forme d'après ce qu'il te dit (sommeil, énergie, humeur, douleurs) et le dernier bilan. S'il te manque des infos, pose UNE seule question.
+- Dès qu'il te donne des infos sur sa forme, enregistre-les avec record_checkin.
+- Tu construis des programmes progressifs façon Solo Leveling (du rang E vers le rang S), adaptés à sa forme et à ses objectifs, en créant des quêtes concrètes, réalisables en une journée, avec add_quests (8 maximum à la fois, XP proportionnel à l'effort : 10 facile, 100 très difficile).
+- S'il demande d'ajouter une tâche de vie (ex : sortir de chez lui), ajoute-la avec add_quests. Pour retirer une quête, utilise remove_quests avec son id.
+- Quand sa forme est basse, propose du repos ou du léger : ne le pousse jamais à l'excès.
+- Tu n'es pas médecin. En cas de douleur inquiétante ou de mal-être profond, invite-le à en parler à un professionnel ou à un proche.`;
+
+    const COACH_TOOLS = [
+      { name: 'add_quests', description: "Ajoute des quêtes (tâches de vie ou d'entraînement) à la liste du joueur.",
+        input_schema: { type: 'object', properties: { quests: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, xp: { type: 'integer' } }, required: ['text', 'xp'] } } }, required: ['quests'] } },
+      { name: 'remove_quests', description: 'Supprime des quêtes à partir de leur id.',
+        input_schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } }, required: ['ids'] } },
+      { name: 'record_checkin', description: "Enregistre l'état de forme du joueur aujourd'hui.",
+        input_schema: { type: 'object', properties: { sleep_hours: { type: 'number' }, energy: { type: 'integer', description: '1 à 10' }, mood: { type: 'integer', description: '1 à 10' }, note: { type: 'string' } } } }
+    ];
+
+    function applyCoachTool(name, input) {
+      if (name === 'add_quests') {
+        const added = (input.quests || []).slice(0, 8).map(q => ({
+          id: 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          text: String(q.text).slice(0, 120),
+          xp: Math.max(5, Math.min(200, parseInt(q.xp, 10) || 20)),
+          done: false
+        }));
+        quests.push(...added);
+        return `➕ ${added.length} quête(s) ajoutée(s).`;
+      }
+      if (name === 'remove_quests') {
+        const before = quests.length;
+        quests = quests.filter(q => !(input.ids || []).includes(q.id));
+        return `🗑️ ${before - quests.length} quête(s) supprimée(s).`;
+      }
+      if (name === 'record_checkin') {
+        checkin = { ...input, date: new Date().toISOString().slice(0, 10) };
+        return '📋 Bilan de forme enregistré.';
+      }
+      return null;
+    }
+
+    async function runCoach(text) {
+      if (!lsGet('ai_key')) {
+        appendMessage('system', '❓ [COACH]: Ajoutez votre clé API Anthropic dans les Réglages pour parler au Coach.');
+        return;
+      }
+      coachHistory.push({ role: 'user', content: text });
+      let msgs = coachHistory.slice(-12);
+      while (msgs.length && msgs[0].role !== 'user') msgs.shift();
+
+      const context = `\n\nÉtat actuel — date : ${new Date().toISOString().slice(0, 10)}, niveau ${state.level}, XP ${state.xp}/${state.xpMax}. Dernier bilan : ${JSON.stringify(checkin)}. Quêtes : ${JSON.stringify(quests.map(q => ({ id: q.id, text: q.text, xp: q.xp, done: q.done })))}`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': lsGet('ai_key'),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: lsGet('ai_model') || 'claude-sonnet-5-5',
+          max_tokens: 1500,
+          system: COACH_PROMPT + context,
+          tools: COACH_TOOLS,
+          messages: msgs
+        })
+      });
+      if (!res.ok) {
+        coachHistory.pop();
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`API Claude (${res.status}) ${err.error && err.error.message ? err.error.message : ''}`.trim());
+      }
+
+      const data = await res.json();
+      let reply = '';
+      const actions = [];
+      for (const b of data.content) {
+        if (b.type === 'text') reply += b.text;
+        if (b.type === 'tool_use') actions.push(applyCoachTool(b.name, b.input || {}));
+      }
+      reply = reply.trim() || 'C\'est fait.';
+      coachHistory.push({ role: 'assistant', content: reply });
+      saveCoach();
+      renderQuests();
+      appendMessage('system', '🧭 [COACH]: ' + reply);
+      actions.filter(Boolean).forEach(a => appendMessage('system', a));
+    }
+
     // ---------- Démarrage ----------
     loadState();
     applyState();
+    loadCoach();
+    renderQuests();
     if (!lsGet('sl_state')) loadRemoteConfig();
   </script>
 </body>
