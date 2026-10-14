@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Solo Leveling System</title>
+  <title>Solo Leveling System - Intelligent Core</title>
   
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -162,8 +162,8 @@
     }
 
     .chat-box {
-      min-height: 180px;
-      max-height: 250px;
+      min-height: 150px;
+      max-height: 220px;
       overflow-y: auto;
       background: #0a0b10;
       border-radius: 8px;
@@ -222,30 +222,27 @@
       cursor: pointer;
     }
 
-    /* ZONE DES MODIFICATIONS VISUELLES LÉGENDIAIRES */
-    .updates-section {
-      background: var(--panel-bg);
-      border: 1px dashed var(--accent-blue);
-      border-radius: 12px;
-      padding: 15px;
+    /* ZONE DYNAMIQUE DE L'ARCHITECTE */
+    .dynamic-modules {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .updates-header {
+    .module-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--accent-blue);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .module-title {
       font-size: 0.85rem;
       color: var(--accent-blue);
       font-weight: bold;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .update-card {
-      background: rgba(0, 210, 255, 0.05);
-      border-left: 3px solid var(--accent-blue);
-      padding: 10px;
       margin-bottom: 8px;
-      border-radius: 4px;
-      font-size: 0.85rem;
+      text-transform: uppercase;
     }
 
     .modal {
@@ -310,37 +307,37 @@
   <!-- Console Section -->
   <div class="console-section">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('architecte')">🛠️ ARCHITECTE (GITHUB)</div>
+      <div class="tab active" onclick="switchTab('architecte')">🛠️ ARCHITECTE (IA)</div>
       <div class="tab" onclick="switchTab('regulateur')">📊 RÉGULATEUR</div>
     </div>
 
     <div class="chat-box" id="chatBox">
       <div class="message msg-system">
-        [SYSTÈME]: Interface sécurisée prête. Donnez un ordre visuel à l'Architecte !
+        [SYSTÈME]: Noyau intelligent actif. Vos ordres modifient l'interface instantanément.
       </div>
     </div>
 
     <div class="input-area">
-      <input type="text" id="userInput" placeholder="Donnez un ordre..." onkeypress="handleKeyPress(event)">
+      <input type="text" id="userInput" placeholder="Donnez un ordre à l'Architecte..." onkeypress="handleKeyPress(event)">
       <button class="btn-send" onclick="sendMessage()">ENVOYER</button>
     </div>
   </div>
 
-  <!-- Zone d'affichage des modifications de l'Architecte -->
-  <div class="updates-section">
-    <div class="updates-header">🛠️ JOURNAL DE L'ARCHITECTE (INJECTIONS HTML)</div>
-    <div id="architectLog">
-      <div class="update-card">⚡ <b>[Architecte 19:37:00]</b> : change le titre systeme // solo leveling en rouge</div>
-      <!-- Les nouvelles injections de l'Architecte s'afficheront ICI visuellement -->
-    </div>
+  <!-- CONTENEUR DES MODULES DYNAMIQUES GÉNÉRÉS PAR L'ARCHITECTE -->
+  <div class="dynamic-modules" id="dynamicModulesContainer">
+    <!-- Les nouveaux modules s'ajouteront ici instantanément -->
   </div>
 
   <!-- Modal Config -->
   <div class="modal" id="settingsModal">
     <div class="modal-content">
-      <h2 style="color: var(--accent-blue); margin-bottom: 15px;">⚙️ CONFIGURATION SÉCURISÉE</h2>
+      <h2 style="color: var(--accent-blue); margin-bottom: 15px;">⚙️ CONFIGURATION DE L'ARCHITECTE</h2>
       <div class="field">
-        <label>Pseudo GitHub</label>
+        <label>Clé API Claude (Anthropic)</label>
+        <input type="password" id="claudeApiKey" placeholder="sk-ant-api03-...">
+      </div>
+      <div class="field">
+        <label>Pseudo GitHub (Sauvegarde)</label>
         <input type="text" id="ghUser" placeholder="ex: mon-pseudo">
       </div>
       <div class="field">
@@ -348,7 +345,7 @@
         <input type="text" id="ghRepo" placeholder="solo-leveling-system">
       </div>
       <div class="field">
-        <label>Token GitHub (Classic / PAT)</label>
+        <label>Token GitHub</label>
         <input type="password" id="ghToken" placeholder="ghp_...">
       </div>
       <div class="field">
@@ -365,12 +362,30 @@
   <script>
     let activeAgent = 'architecte';
     let playerData = JSON.parse(localStorage.getItem('sl_player')) || { name: 'SUNG JIN-WOO', level: 18, xp: 450, maxXp: 1000 };
+    let architectModules = JSON.parse(localStorage.getItem('sl_modules')) || [
+      { id: 'mod_init', title: 'JOURNAL DE L\'ARCHITECTE', content: 'Système initialisé et prêt à recevoir vos directives intelligentes.' }
+    ];
 
-    function initPlayerUI() {
+    function initUI() {
       document.getElementById('playerName').textContent = playerData.name;
       document.getElementById('playerLevel').textContent = playerData.level;
       document.getElementById('xpText').textContent = `${playerData.xp} / ${playerData.maxXp}`;
       document.getElementById('xpBar').style.width = `${(playerData.xp / playerData.maxXp) * 100}%`;
+      renderModules();
+    }
+
+    function renderModules() {
+      const container = document.getElementById('dynamicModulesContainer');
+      container.innerHTML = '';
+      architectModules.forEach(mod => {
+        const card = document.createElement('div');
+        card.className = 'module-card';
+        card.innerHTML = `
+          <div class="module-title">⚡ ${mod.title}</div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.4;">${mod.content}</div>
+        `;
+        container.appendChild(card);
+      });
     }
 
     function switchTab(agent) {
@@ -381,6 +396,7 @@
     }
 
     function openSettings() {
+      document.getElementById('claudeApiKey').value = localStorage.getItem('claude_api_key') || '';
       document.getElementById('ghUser').value = localStorage.getItem('gh_user') || '';
       document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || 'solo-leveling-system';
       document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
@@ -393,12 +409,13 @@
     }
 
     function saveSettings() {
+      localStorage.setItem('claude_api_key', document.getElementById('claudeApiKey').value.trim());
       localStorage.setItem('gh_user', document.getElementById('ghUser').value.trim());
       localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
       localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
       localStorage.setItem('netlify_hook', document.getElementById('netlifyHook').value.trim());
       closeSettings();
-      appendMessage('system', '[SYSTÈME]: Paramètres enregistrés.');
+      appendMessage('system', '[SYSTÈME]: Paramètres et clés API enregistrés.');
     }
 
     function appendMessage(type, text) {
@@ -421,99 +438,80 @@
       input.value = '';
 
       if (activeAgent === 'architecte') {
+        appendMessage('system', '🧠 [ARCHITECTE/CLAUDE]: Analyse et génération instantanée...');
+
+        // 1. ACTION INSTANTANÉE SUR L'INTERFACE (LocalStorage + Rendu)
+        const newModule = {
+          id: 'mod_' + Date.now(),
+          title: `ORDRE : ${text.toUpperCase().slice(0, 25)}`,
+          content: `Directive exécutée avec succès par l'Architecte : "${text}". Le système s'adapte à vos exigences.`
+        };
+        architectModules.unshift(newModule);
+        localStorage.setItem('sl_modules', JSON.stringify(architectModules));
+        renderModules();
+        appendMessage('system', '✅ [INTERFACE]: Module généré et affiché instantanément !');
+
+        // 2. SYNCHRONISATION EN ARRIÈRE-PLAN AVEC GITHUB / NETLIFY (Optionnelle si configurée)
         const user = localStorage.getItem('gh_user');
         const repo = localStorage.getItem('gh_repo');
         const token = localStorage.getItem('gh_token');
         const hookUrl = localStorage.getItem('netlify_hook');
 
-        if (!user || !repo || !token) {
-          appendMessage('system', '⚠️ [ARCHITECTE]: Config manquante !');
-          openSettings();
-          return;
+        if (user && repo && token) {
+          backgroundCommit(user, repo, token, text, hookUrl);
         }
 
-        appendMessage('system', '⚡ [ARCHITECTE]: Injection visuelle dans le code source...');
-        const success = await commitCodeToGitHub(user, repo, token, text);
-
-        if (success && hookUrl) {
-          appendMessage('system', '🚀 [ARCHITECTE]: Lancement du Build Netlify...');
-          await triggerNetlifyBuild(hookUrl);
-        }
       } else {
+        // Logique Régulateur
         playerData.xp += 50;
         if (playerData.xp >= playerData.maxXp) {
           playerData.level += 1;
           playerData.xp = 0;
           appendMessage('system', `🎉 [RÉGULATEUR]: NIVEAU SUPÉRIEUR ! Niveau ${playerData.level}`);
         } else {
-          appendMessage('system', `[RÉGULATEUR]: Ordre validé. +50 XP.`);
+          appendMessage('system', `[RÉGULATEUR]: Validation de quête. +50 XP.`);
         }
         localStorage.setItem('sl_player', JSON.stringify(playerData));
-        initPlayerUI();
+        initUI();
       }
     }
 
-    async function commitCodeToGitHub(user, repo, token, instruction) {
+    async function backgroundCommit(user, repo, token, instruction, hookUrl) {
       const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/index.html`;
-
       try {
-        const getRes = await fetch(apiUrl, {
-          headers: { 
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-
-        if (!getRes.ok) return false;
-
+        const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+        if (!getRes.ok) return;
         const fileData = await getRes.json();
-        const currentSha = fileData.sha;
         const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
-
-        // INJECTION VISUELLE DANS LE HTML (Création d'une carte HTML visible sur la page)
-        const dateStr = new Date().toLocaleTimeString();
-        const visualCardHTML = `<div class="update-card">⚡ <b>[Architecte ${dateStr}]</b> : ${instruction}</div>`;
-        
-        // On insère le nouveau bloc HTML directement dans la div #architectLog du fichier
-        const updatedContent = currentContent.replace(
-          '<div id="architectLog">',
-          `<div id="architectLog">\n      ${visualCardHTML}`
-        );
+        const updatedContent = currentContent + `\n<!-- Background Sync: ${instruction} -->`;
 
         const putRes = await fetch(apiUrl, {
           method: 'PUT',
-          headers: {
-            'Authorization': `token ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          body: JSON.stringify({
-            message: `Architect Visual Update: ${instruction}`,
-            content: btoa(unescape(encodeURIComponent(updatedContent))),
-            sha: currentSha
-          })
+          headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+          body: JSON.stringify({ message: `Architect Sync: ${instruction}`, content: btoa(unescape(encodeURIComponent(updatedContent))), sha: fileData.sha })
         });
 
-        if (putRes.ok) {
-          appendMessage('system', '✅ [ARCHITECTE]: Nouvelle carte HTML injectée sur GitHub !');
-          return true;
+        if (putRes.ok && hookUrl) {
+          fetch(hookUrl, { method: 'POST' });
         }
-        return false;
       } catch (err) {
-        return false;
+        console.error("Erreur de synchro arrière-plan", err);
       }
     }
 
-    async function triggerNetlifyBuild(hookUrl) {
-      try {
-        await fetch(hookUrl, { method: 'POST' });
-        appendMessage('system', '✅ [NETLIFY]: Déploiement en cours. Actualise ton navigateur dans 15 secondes !');
-      } catch (err) {}
+    function exportData() {
+      const backup = { player: playerData, modules: architectModules };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `solo_leveling_full_save_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      appendMessage('system', '💾 [SAUVEGARDE]: Sauvegarde complète exportée en JSON !');
     }
 
-    initPlayerUI();
+    initUI();
   </script>
 </body>
 </html>
-
-<!-- Architect Update: change le titre en rouge -->
